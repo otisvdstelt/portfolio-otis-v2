@@ -1,11 +1,11 @@
-// The state of the air, shared by every shader in the valley. One ticker in
+// The state of the air, shared by every shader in the world. One ticker in
 // the scene moves these values; the materials only ever read them.
 
 export type Weather = 'sun' | 'rain'
 export type Phase = 'day' | 'night'
 
 export const air = {
-  /** Seconds since the valley woke up. */
+  /** Seconds since the world woke up. */
   time: { value: 0 },
   /** How hard the grass leans: about 1 on a still evening, more in the rain. */
   wind: { value: 1 },

@@ -12,21 +12,26 @@ export function useMediaQuery(query: string): boolean {
   )
 }
 
+/** Below this width the page is laid out for a phone or a small tablet: a menu along the bottom and sheets that slide up. */
+export const COMPACT = '(max-width: 1023px)'
+
 export type Mode = 'roam' | 'backdrop'
 
 /**
- * How the valley is shown on this device. A pointer and some headroom get the
- * free camera (`roam`); touch screens, small windows and modest hardware get
- * fixed views that act as animated backdrops. `?mode=roam` or `?mode=backdrop`
- * in the address overrides the guess.
+ * The capability check. A wide window with a pointer and some headroom gets
+ * the free camera and everything that moves (`roam`). A touch screen, a
+ * window under 1024 px, or modest hardware gets fixed compositions that act
+ * as animated backdrops: nothing in the scene is repositioned at run time,
+ * and the lights and shadows that cost the most are left out. `?mode=roam`
+ * or `?mode=backdrop` in the address overrides the guess.
  */
 export function useMode(): Mode {
   const coarse = useMediaQuery('(pointer: coarse)')
-  const small = useMediaQuery('(max-width: 767px)')
+  const compact = useMediaQuery(COMPACT)
   const asked = new URLSearchParams(window.location.search).get('mode')
   if (asked === 'roam' || asked === 'backdrop') return asked
   const cores = navigator.hardwareConcurrency ?? 8
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8
   const modest = cores <= 2 || (cores <= 4 && memory <= 4)
-  return coarse || small || modest ? 'backdrop' : 'roam'
+  return coarse || compact || modest ? 'backdrop' : 'roam'
 }

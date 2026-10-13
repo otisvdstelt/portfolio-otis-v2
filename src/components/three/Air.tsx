@@ -16,17 +16,20 @@ const moteVertex = /* glsl */ `
   uniform vec3 uCentre;
   attribute vec4 aSeed;
   varying float vLight;
-  const vec3 BOX = vec3(64.0, 13.0, 64.0);
+  const vec3 BOX = vec3(26.0, 9.0, 26.0);
 
   void main() {
-    // Dust rides the air sideways; fireflies wander in small loops close to the grass.
-    vec3 drift = vec3(uTime * (0.25 + aSeed.x * 0.3), sin(uTime * 0.3 + aSeed.w * 6.28) * 0.6, uTime * (0.1 + aSeed.y * 0.15));
-    vec3 loop = vec3(sin(uTime * (0.4 + aSeed.x) + aSeed.w * 6.28), sin(uTime * (0.7 + aSeed.y) + aSeed.z * 6.28) * 0.5, cos(uTime * (0.5 + aSeed.z) + aSeed.w * 3.0)) * 1.6;
-    vec3 p = position + mix(drift, loop, uNight);
-    p.y = mix(p.y, p.y * 0.34, uNight);
-    // Keep the swarm wrapped round wherever the camera is looking.
+    // Dust rises slowly through the warm air, wandering a little as it goes;
+    // fireflies wander in small loops instead and keep close to the ground.
+    vec3 p = position;
+    p.y = mod(p.y + uTime * (0.1 + aSeed.x * 0.16), BOX.y);
+    p.x += sin(uTime * (0.2 + aSeed.y * 0.3) + aSeed.w * 6.28) * 0.5;
+    p.z += cos(uTime * (0.17 + aSeed.z * 0.3) + aSeed.w * 4.0) * 0.5;
+    vec3 loop = vec3(sin(uTime * (0.4 + aSeed.x) + aSeed.w * 6.28), sin(uTime * (0.7 + aSeed.y) + aSeed.z * 6.28) * 0.5, cos(uTime * (0.5 + aSeed.z) + aSeed.w * 3.0)) * 1.4;
+    p = mix(p, vec3(position.x, position.y * 0.3, position.z) + loop, uNight);
+    // Keep the cloud of them wrapped round whatever is being looked at.
     p.xz = mod(p.xz - uCentre.xz + BOX.xz * 0.5, BOX.xz) - BOX.xz * 0.5 + uCentre.xz;
-    p.y += 0.8;
+    p.y += uCentre.y - mix(3.0, 1.2, uNight);
 
     float blink = smoothstep(0.35, 0.9, sin(uTime * (1.1 + aSeed.z * 1.6) + aSeed.w * 6.28) * 0.5 + 0.5);
     float shimmer = 0.55 + 0.45 * sin(uTime * (0.8 + aSeed.y) + aSeed.x * 6.28);
@@ -34,7 +37,7 @@ const moteVertex = /* glsl */ `
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
-    gl_PointSize = uScale * mix(0.05 + aSeed.z * 0.06, 0.13 + aSeed.z * 0.09, uNight) / -mv.z;
+    gl_PointSize = uScale * mix(0.022 + aSeed.z * 0.03, 0.07 + aSeed.z * 0.06, uNight) / -mv.z;
   }
 `
 
@@ -47,19 +50,19 @@ const moteFragment = /* glsl */ `
   void main() {
     float d = length(gl_PointCoord - 0.5);
     float core = smoothstep(0.5, 0.0, d);
-    float alpha = core * core * vLight * mix(0.5, 1.0, uNight) * (1.0 - uRain * 0.9);
+    float alpha = core * core * vLight * mix(0.55, 1.0, uNight) * (1.0 - uRain * 0.9);
     gl_FragColor = vec4(mix(uDust, uFirefly, uNight) * alpha, alpha);
   }
 `
 
-/** Golden dust in the last sunlight; after dark the same points slow down, sink toward the grass and blink as fireflies. */
+/** Golden dust rising in the last sunlight; after dark the same points sink toward the ground and blink as fireflies. */
 export function Motes({ count }: { count: number }) {
   const geometry = useMemo(() => {
     const random = seeded(31)
     const positions = new Float32Array(count * 3)
     const seeds = new Float32Array(count * 4)
     for (let i = 0; i < count; i++) {
-      positions.set([random() * 64, random() * 13, random() * 64], i * 3)
+      positions.set([random() * 26, random() * 9, random() * 26], i * 3)
       seeds.set([random(), random(), random(), random()], i * 4)
     }
     const points = new BufferGeometry()
@@ -177,7 +180,7 @@ export function Rain({ count }: { count: number }) {
   return <lineSegments geometry={geometry} material={material} layers={MEADOW_LAYER} frustumCulled={false} renderOrder={9} />
 }
 
-// ------------------------------------------------------------ smoke
+// ------------------------------------------------------------ smoke and steam
 
 const puffGeometry = new IcosahedronGeometry(1, 1)
 const puffColours = new Float32Array(puffGeometry.getAttribute('position').count * 3).fill(1)
@@ -193,21 +196,22 @@ interface SmokeProps {
   puffs?: number
   /** Seconds a puff lives. */
   life?: number
+  opacity?: number
 }
 
 /**
  * A column of cel-shaded puffs: each swells as it climbs, leans with the wind and shrinks to nothing.
- * They are thin washes, see-through and kept out of the depth buffer, so the ink pass leaves them unlined.
+ * They are thin washes, see-through and kept out of the depth buffer. Small, it is the steam off a mug of tea.
  */
-export function Smoke({ position, rise, size, colour = '#f4ecdc', puffs = 6, life = 5 }: SmokeProps) {
+export function Smoke({ position, rise, size, colour = '#f4ecdc', puffs = 6, life = 5, opacity = 0.6 }: SmokeProps) {
   const mesh = useRef<InstancedMesh>(null)
   const material = useMemo(() => {
     const wash = paintedToon({ color: colour })
     wash.transparent = true
-    wash.opacity = 0.62
+    wash.opacity = opacity
     wash.depthWrite = false
     return wash
-  }, [colour])
+  }, [colour, opacity])
 
   useFrame(() => {
     if (!mesh.current) return
@@ -215,7 +219,7 @@ export function Smoke({ position, rise, size, colour = '#f4ecdc', puffs = 6, lif
     for (let i = 0; i < puffs; i++) {
       const age = (t / life + i / puffs) % 1
       const swell = Math.sin(Math.min(1, age * 1.15) * Math.PI) ** 0.7
-      dummy.position.set(age * age * rise * 0.45 * air.wind.value + Math.sin(t * 0.6 + i * 2.1) * 0.12, age * rise, Math.cos(t * 0.5 + i * 1.3) * 0.12 * age)
+      dummy.position.set(age * age * rise * 0.3 * air.wind.value + Math.sin(t * 0.6 + i * 2.1) * size * 0.4, age * rise, Math.cos(t * 0.5 + i * 1.3) * size * 0.4 * age)
       dummy.scale.setScalar(Math.max(0.001, size * (0.35 + age * 0.9) * swell))
       dummy.rotation.set(i, t * 0.2 + i, 0)
       dummy.updateMatrix()

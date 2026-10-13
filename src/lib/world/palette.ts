@@ -1,40 +1,69 @@
-// The paintbox. Antiqued cream and oatmeal for ground tones; moss, clover,
-// terracotta and cornflower for everything that should catch the eye.
+// The paintbox. The page's five named colours (see src/index.css) are in here
+// too, so that paper, ink, moss, mist and terracotta are the same on the HTML
+// and in the painted world.
 export const PAINT = {
-  moss: '#5e8038',
-  mossDeep: '#48692f',
+  // The five from the brief.
+  parchment: '#f7f4eb',
+  ink: '#2c2823',
+  moss: '#3b533e',
+  mist: '#a3c1ad',
+  terracotta: '#b8623b',
+
+  // Greens.
+  mossLight: '#5f8048',
   clover: '#86ae4a',
   sunlit: '#b9c75c',
-  hillBlue: '#6d9168',
+  leafDeep: '#3f6a3a',
+  leaf: '#6a9a43',
+  leafLight: '#a2c256',
+  leafGold: '#c8cf68',
+  pine: '#2f5540',
+  pineLight: '#4f7f58',
 
+  // Earth, stone and timber.
   path: '#d8bd8b',
   pathEdge: '#c1a06f',
   sand: '#dbcb9f',
-  lakeBed: '#5f918c',
-  lakeDeep: '#34606c',
-  ballast: '#b4a58d',
-
+  cobble: '#b7ab97',
+  stone: '#b9ae9c',
+  stoneLight: '#d4cab6',
+  stoneDark: '#8f8676',
   wood: '#8c5f3e',
   woodLight: '#b3855c',
   woodDark: '#5f4231',
   woodPale: '#cba77c',
+  // Sun-bleached planks, and the dark walnut of old shop fittings.
+  bleached: '#d8ccb4',
+  bleachedLight: '#e9dfc9',
+  bleachedDark: '#b9ab90',
+  walnut: '#5a3a26',
+  walnutDeep: '#3d2618',
+  walnutLight: '#7a5236',
+  amber: '#c98a42',
+  amberDeep: '#9c642c',
+  amberLight: '#e2ab5e',
   bark: '#6c4b37',
   barkLight: '#8d6548',
+  leather: '#8f4e31',
+  leatherDeep: '#6a3722',
 
-  stone: '#b9ae9c',
-  stoneLight: '#d4cab6',
-  stoneDark: '#8f8676',
-
+  // Plaster, canvas and paper.
+  plaster: '#f1e4c8',
+  plasterShade: '#dccaa6',
   cream: '#f2e7ce',
   oat: '#e3d4b4',
   canvas: '#f6eedb',
+  white: '#fbf8f0',
 
-  terracotta: '#c2643f',
-  terracottaDeep: '#9b4b31',
-  terracottaLight: '#db8a62',
-  cornflower: '#7c9fd7',
-  cornflowerDeep: '#5a7fb9',
+  // The train and the roofs.
+  red: '#b5332c',
+  redDeep: '#8a2320',
+  redLight: '#cf4c3d',
+  terracottaDeep: '#8c452a',
+  terracottaLight: '#d98660',
+  roofGrey: '#6f6a64',
 
+  // Metal.
   copper: '#c9783e',
   copperLight: '#e4a262',
   verdigris: '#7fb8a3',
@@ -42,19 +71,48 @@ export const PAINT = {
   brass: '#cf9f49',
   iron: '#3c3631',
   soot: '#2b2521',
+  steel: '#8d949a',
 
-  leafDeep: '#47743a',
-  leaf: '#6a9a43',
-  leafLight: '#a2c256',
-  leafGold: '#c8cf68',
-  pine: '#3f6b4c',
-  pineLight: '#5f8f5c',
+  // The bakery.
+  crust: '#d9a047',
+  crustDeep: '#a8672a',
+  crustLight: '#f0c878',
+  flour: '#f3ead6',
+  lavender: '#8f84c9',
+  lavenderDeep: '#675ba6',
+  chalkboard: '#33443c',
+  brick: '#a8553a',
+  brickLight: '#c6714f',
 
-  cloudShade: '#f4e0c8',
-  cloud: '#fffaf0',
+  // The attic's glass and paper.
+  ruby: '#c2465b',
+  emerald: '#3f9b6d',
+  sapphire: '#4f78c8',
+  honey: '#e0a03a',
+  violet: '#8a62c2',
+  teal: '#3fa7a0',
+  rose: '#e08aa0',
+  lime: '#a6c84a',
+  blueprint: '#4f76ad',
+  blueprintLight: '#84a5d2',
+  cornflower: '#7c9fd7',
+  cornflowerDeep: '#5a7fb9',
+  rug: '#9a3f3a',
+  wine: '#5c262b',
+  wineLight: '#7b3438',
 
+  // Sky and light.
+  // Clouds at the end of the day: violet underneath, peach where the sun still reaches.
+  cloudShade: '#a99cc4',
+  cloud: '#ffe6cf',
+  tealTin: '#3f8f95',
+  tealTinDeep: '#2c6a72',
+  sunflower: '#f0b82c',
   flame: '#ffb03b',
   flameCore: '#fff0a8',
   lamp: '#ffe2a0',
   window: '#f7e6b4',
 } as const
+
+/** The colours potions come in. */
+export const JEWELS = [PAINT.ruby, PAINT.emerald, PAINT.sapphire, PAINT.honey, PAINT.violet, PAINT.teal, PAINT.rose, PAINT.lime] as const

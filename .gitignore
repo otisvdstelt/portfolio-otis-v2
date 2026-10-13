@@ -26,3 +26,6 @@ dist-ssr
 # Tool caches
 .impeccable
 .vercel
+
+# Local assistant settings
+.claude/settings.local.json

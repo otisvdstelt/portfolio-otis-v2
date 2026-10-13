@@ -1,14 +1,14 @@
-import { Color, DataTexture, LinearFilter, LinearMipmapLinearFilter, MeshBasicMaterial, MeshToonMaterial, NearestFilter, RedFormat, RepeatWrapping, RGBAFormat, type ColorRepresentation } from 'three'
+import { AdditiveBlending, Color, DataTexture, DoubleSide, LinearFilter, LinearMipmapLinearFilter, MeshBasicMaterial, MeshToonMaterial, NearestFilter, RedFormat, RepeatWrapping, RGBAFormat, type ColorRepresentation } from 'three'
 import { air } from '../../lib/air'
 import { fbm } from '../../lib/world/terrain'
 
 /**
- * Three flat tones instead of a smooth falloff: shade, half-light, light.
- * MeshToonMaterial looks up `dot(normal, light)` remapped to 0..1 in this
- * strip, so the texels are: facing away, grazing away, grazing toward, facing.
+ * Exactly three tones: shadow, midtone, highlight. MeshToonMaterial looks up
+ * `dot(normal, light)` remapped to 0..1 in this strip; the filter is nearest,
+ * so one tone never blurs into the next.
  */
 export const toonGradient = (() => {
-  const texture = new DataTexture(new Uint8Array([58, 58, 168, 255]), 4, 1, RedFormat)
+  const texture = new DataTexture(new Uint8Array([62, 166, 255]), 3, 1, RedFormat)
   texture.minFilter = NearestFilter
   texture.magFilter = NearestFilter
   texture.generateMipmaps = false
@@ -18,7 +18,8 @@ export const toonGradient = (() => {
 
 /**
  * A tile of soft blotches, like pigment settling into wet paper. Every painted
- * surface is multiplied by it in world space, so no colour lies perfectly flat.
+ * surface is multiplied by it in world space, and it nudges the surface normal
+ * too, so the edge between two tones wanders the way wet paint bleeds.
  */
 export const washTexture = (() => {
   const size = 128
@@ -48,7 +49,7 @@ export const washTexture = (() => {
   return texture
 })()
 
-/** Rings spreading where raindrops land. Shared by the painted surfaces and the lake. */
+/** Rings spreading where raindrops land. Shared by the painted surfaces and the sea. */
 export const RAIN_RINGS_GLSL = /* glsl */ `
   float rainHash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -73,39 +74,29 @@ export const RAIN_RINGS_GLSL = /* glsl */ `
   }
 `
 
-/**
- * The same three tones with the steps blended into one another. The land is
- * painted with this one: hills in a background are soft washes, and only the
- * things standing on them get hard cel bands.
- */
-export const softGradient = (() => {
-  const texture = toonGradient.clone()
-  texture.minFilter = LinearFilter
-  texture.magFilter = LinearFilter
-  texture.needsUpdate = true
-  return texture
-})()
-
 interface PaintOptions {
   color?: ColorRepresentation
-  /** See-through, for the greenhouse panes. */
+  /** See-through, for window panes. */
   glass?: boolean
-  /** Leans with the wind; for instanced grass and flowers only. */
+  /** Leans with the wind; for instanced grass only. */
   sway?: boolean
-  /** Shade in soft washes instead of hard bands; for the ground and what grows flat on it. */
-  soft?: boolean
+  /**
+   * Everything of this material below this height (in the world) is under a
+   * roof: it stays dry when it rains. Left out, the whole thing is out in the weather.
+   */
+  shelter?: number
 }
 
 /**
- * The valley's one way of painting: a cel-shaded material taking its colours
+ * The world's one way of painting: a cel-shaded material taking its colours
  * from the vertices, with a watercolour wash laid over it and, in the rain,
  * a wet sheen and ripples on anything that faces the sky.
  */
-export function paintedToon({ color = '#ffffff', glass = false, sway = false, soft = false }: PaintOptions = {}): MeshToonMaterial {
-  const material = new MeshToonMaterial({ color, vertexColors: true, gradientMap: soft ? softGradient : toonGradient })
+export function paintedToon({ color = '#ffffff', glass = false, sway = false, shelter = -1e6 }: PaintOptions = {}): MeshToonMaterial {
+  const material = new MeshToonMaterial({ color, vertexColors: true, gradientMap: toonGradient })
   if (glass) {
     material.transparent = true
-    material.opacity = 0.34
+    material.opacity = 0.26
     material.depthWrite = false
   }
   material.onBeforeCompile = (shader) => {
@@ -113,13 +104,15 @@ export function paintedToon({ color = '#ffffff', glass = false, sway = false, so
     shader.uniforms.uWind = air.wind
     shader.uniforms.uRain = air.rain
     shader.uniforms.uWash = { value: washTexture }
+    shader.uniforms.uShelter = { value: shelter }
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform float uWind;\nvarying vec3 vPaintPos;\nvarying float vPaintUp;')
       .replace(
         '#include <begin_vertex>',
         sway
           ? /* glsl */ `#include <begin_vertex>
-            // Each tuft leans by the square of its height, on a gust that crosses the meadow.
+            // A wave of wind rolling across the meadow: each tuft leans by the square of its height,
+            // on the sine of the clock plus where it stands.
             vec4 swayRoot = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
             float swayBeat = uTime * 1.25 + swayRoot.x * 0.33 + swayRoot.z * 0.21;
             float gust = sin(swayBeat) * 0.55 + sin(swayBeat * 2.3 + 1.7) * 0.2 + sin(uTime * 0.37 + swayRoot.x * 0.05) * 0.45;
@@ -143,15 +136,16 @@ export function paintedToon({ color = '#ffffff', glass = false, sway = false, so
     // Blades are seen from both sides and must be lit the same from both: never flip their normal for the back face.
     if (sway) shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_begin>', 'float faceDirection = 1.0;\nvec3 normal = normalize(vNormal);\nvec3 nonPerturbedNormal = normal;')
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nuniform float uTime;\nuniform float uRain;\nuniform sampler2D uWash;\nvarying vec3 vPaintPos;\nvarying float vPaintUp;\n${RAIN_RINGS_GLSL}`)
+      .replace('#include <common>', `#include <common>\nuniform float uTime;\nuniform float uRain;\nuniform float uShelter;\nuniform sampler2D uWash;\nvarying vec3 vPaintPos;\nvarying float vPaintUp;\n${RAIN_RINGS_GLSL}`)
       .replace(
         '#include <color_fragment>',
         /* glsl */ `#include <color_fragment>
           vec2 washUv = vPaintPos.xz * 0.05 + vPaintPos.y * 0.035;
           vec3 washed = texture2D(uWash, washUv).rgb;
-          float wash = washed.r * 0.55 + texture2D(uWash, washUv * 3.3 + 0.37).g * 0.3 + washed.b * 0.15;
+          vec3 bleed = texture2D(uWash, washUv * 3.3 + 0.37).rgb;
+          float wash = washed.r * 0.55 + bleed.g * 0.3 + washed.b * 0.15;
           diffuseColor.rgb *= 0.86 + wash * 0.28;
-          if (uRain > 0.001) {
+          if (uRain > 0.001 && vPaintPos.y > uShelter) {
             float skyward = smoothstep(0.45, 0.9, vPaintUp);
             float rings = rainRings(vPaintPos.xz, uTime) * skyward * uRain;
             // Wet things go a shade deeper; the rings catch what light there is.
@@ -159,15 +153,22 @@ export function paintedToon({ color = '#ffffff', glass = false, sway = false, so
             diffuseColor.rgb += rings * 0.3;
           }`,
       )
+      .replace(
+        '#include <normal_fragment_maps>',
+        /* glsl */ `#include <normal_fragment_maps>
+          // The canvas has a grain: nudge the normal by it, so the line where one tone meets the next runs ragged.
+          normal = normalize(normal + (vec3(bleed.r, washed.g, bleed.b) - 0.5) * 0.34);`,
+      )
   }
   material.customProgramCacheKey = () => `painted-${sway ? 'sway' : 'still'}`
   return material
 }
 
-/** Most of the valley shares these three. */
+/** Most of the world shares these. */
 export const paint = paintedToon()
-export const land = paintedToon({ soft: true })
 export const glass = paintedToon({ glass: true })
+/** For everything that lives indoors: it is never rained on. */
+export const dry = paintedToon({ shelter: 1e6 })
 
 /**
  * Windows, lanterns and flames. Unlit, because a light is its own light: by
@@ -176,9 +177,15 @@ export const glass = paintedToon({ glass: true })
 export const glow = new MeshBasicMaterial({ color: '#ffffff', vertexColors: true })
 export const flame = new MeshBasicMaterial({ color: '#ffffff', vertexColors: true })
 
-const glowDay = new Color('#cfc4a8')
+/** A shaft of sunlight in dusty air: added onto what is behind it, brightest where its vertices are. */
+export const shaft = new MeshBasicMaterial({ color: '#ffffff', vertexColors: true, transparent: true, blending: AdditiveBlending, depthWrite: false, fog: false, side: DoubleSide })
+
+const glowDay = new Color('#f0dfae')
 const glowNight = new Color('#fff1c4').multiplyScalar(1.5)
+const shaftDay = new Color('#ffffff')
+const shaftNight = new Color('#000000')
 
 export function setGlow(night: number) {
   glow.color.copy(glowDay).lerp(glowNight, night)
+  shaft.color.copy(shaftDay).lerp(shaftNight, night)
 }

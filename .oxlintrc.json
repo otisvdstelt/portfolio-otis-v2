@@ -6,6 +6,7 @@
     "oxc"
   ],
   "ignorePatterns": [
+    "public/draco/**",
     "dist/**"
   ],
   "rules": {

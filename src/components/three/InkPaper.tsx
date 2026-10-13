@@ -71,10 +71,12 @@ const fragment = /* glsl */ `
     float seam = max(max(distance(h0, hue(cl)), distance(h0, hue(cr))), max(distance(h0, hue(cd)), distance(h0, hue(cu))));
     float detail = smoothstep(0.05, 0.12, seam) * step(nearest, 0.99999);
 
-    // Lines thin out with distance, and the pen presses harder in some places than others.
-    float reach = 1.0 - 0.8 * smoothstep(25.0, 170.0, z);
+    // Close to, every object carries its own inked outline, a hull drawn round the mesh.
+    // That line is measured in the world, so it thins to nothing with distance; this one
+    // takes over there, and keeps the far things drawn.
+    float far = smoothstep(16.0, 44.0, z) * (1.0 - 0.6 * smoothstep(90.0, 260.0, z)) * (1.0 - smoothstep(320.0, 620.0, z));
     float pressure = 0.62 + 0.5 * inkNoise(px * 0.07);
-    float ink = clamp(max(outline, detail * 0.55) * reach * pressure, 0.0, 1.0);
+    float ink = clamp(max(outline * far, detail * 0.4) * pressure, 0.0, 1.0);
     colour = mix(colour, uInk, ink * 0.86);
 
     // --- Paper: the tooth of the sheet, and pigment pooling in slow blotches.
@@ -115,9 +117,10 @@ class InkPaperEffect extends Effect {
 }
 
 /**
- * The pass that turns the render into a drawing: sepia ink where shapes
- * overlap or colours meet, the grain of the paper over everything, and a
- * ragged edge where the paint stops short of the sheet.
+ * The pass that turns the render into a painting on paper: the tooth of the
+ * sheet and pooled pigment over everything, a ragged edge where the wash
+ * stops short, ink for the things too far away to carry their own outline,
+ * and the wash that spreads in when a scene arrives.
  */
 export function InkPaper() {
   const effect = useMemo(() => new InkPaperEffect(), [])

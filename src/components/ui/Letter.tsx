@@ -70,7 +70,7 @@ export function Letter() {
             id={`${id}-message`}
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            placeholder="I saw your valley and wanted to say…"
+            placeholder="I rode your train and wanted to say…"
             aria-invalid={Boolean(errors.message)}
             aria-describedby={errors.message ? `${id}-message-error` : undefined}
           />

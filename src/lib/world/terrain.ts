@@ -1,6 +1,7 @@
-// The lie of the land. One height function describes the whole valley; the
-// asset script bakes it into the terrain mesh and the app asks it where the
-// ground is when it plants grass, stands landmarks up and parks the camera.
+// The lie of the land, and of the sea. The world is one railway laid straight
+// across a flat sea: a floating halt at one end, a coastal town at the other.
+// The asset script bakes the coast from these functions and the app asks them
+// where the ground is when it plants things and parks the camera.
 
 // ------------------------------------------------------------ noise
 
@@ -58,149 +59,79 @@ export const smoothstep = (edge0: number, edge1: number, x: number): number => {
 }
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t
-const bump = (dx: number, dz: number, sigma: number) => Math.exp(-(dx * dx + dz * dz) / (2 * sigma * sigma))
 
 // ------------------------------------------------------------ the map
 
-/** Half the width of the terrain square. */
-export const WORLD_HALF = 96
-/** The lake's surface. */
-export const WATER_Y = -0.45
-/** The railway runs dead straight, north to south, along this line. */
-export const TRACK_X = 15
-export const TRACK_NORTH = -58
-export const TRACK_SOUTH = 17.5
+/** The sea is perfectly flat, and it is the zero everything else is measured from. */
+export const SEA_Y = 0
+/** Platforms, the quay and the floors of the train all stand at one height above the water. */
+export const DECK = 1
+/** The railway runs along z = 0, from the halt at x = 0 east to the town. */
+export const TOWN_X = 300
+export const TRACK = { west: -420, east: TOWN_X + 30, gauge: 1.44 }
+/** While the train is under way it runs round this stretch for ever; telegraph posts stand along it. */
+export const CRUISE = { from: 80, to: 200, speed: 9, postEvery: 40 }
 
-/** Where each thing stands, as [x, z]. North is -z; the home hill is in the south. */
-export const SITES = {
-  hill: [0, 44],
-  signpost: [2.6, 42.4],
-  oak: [-27, -6],
-  greenhouse: [-22.6, -1.9],
-  platform: [11.6, 5],
-  train: [TRACK_X, -2],
-  lake: [31, -3],
-  meadow: [-2, -30],
-  postbox: [-13, 21],
-  campfire: [-10, 23.6],
-} as const satisfies Record<string, readonly [number, number]>
+/** The town's level ground behind the quay. */
+export const TOWN = { west: 270, east: 334, front: -1.9, back: -25 }
+/** The clearing on the hill behind the town, where the campfire burns. */
+export const CLEARING = { x: TOWN_X + 35, z: -58, radius: 8 }
 
-/** The windmill meadow: x, z, size and how far each mill is turned from facing south. */
-export const WINDMILLS: readonly (readonly [number, number, number, number])[] = [
-  [-13.5, -26.5, 1.0, 0.5],
-  [-7.6, -33.5, 1.22, 0.2],
-  [-1.2, -27.6, 0.92, -0.1],
-  [5.2, -34.4, 1.3, -0.3],
-  [10.2, -27.2, 1.05, -0.55],
-]
+/** The coast as a patch of ground: the terrain mesh covers exactly this rectangle. */
+export const LAND = { west: 232, east: 396, north: -134, south: 2 }
 
-/** The footpaths, as chains of [x, z]. They are painted into the grass, not modelled. */
-export const PATHS: readonly (readonly (readonly [number, number])[])[] = [
-  [
-    [2.2, 40.5],
-    [1, 33],
-    [-2, 24],
-    [-1.2, 14],
-    [0, 6],
-  ],
-  [
-    [0, 6],
-    [-8, 3.4],
-    [-15.5, 1.2],
-    [-20.4, -0.2],
-  ],
-  [
-    [0, 6],
-    [5, 6.4],
-    [9.2, 6],
-  ],
-  [
-    [0, 6],
-    [0.6, -4],
-    [-1.6, -14],
-    [-2.4, -24.5],
-  ],
-  [
-    [-2, 24],
-    [-6.5, 23],
-    [-11, 21.8],
-  ],
-]
-
-function segmentDistance(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
-  const dx = bx - ax
-  const dz = bz - az
-  const t = Math.min(1, Math.max(0, ((px - ax) * dx + (pz - az) * dz) / (dx * dx + dz * dz)))
-  return Math.hypot(px - ax - dx * t, pz - az - dz * t)
+// The island before anyone levelled it: one rounded hill with a ragged shoreline.
+function wildHeight(x: number, z: number): number {
+  const d = Math.hypot((x - 314) / 68, (z + 66) / 62) + (fbm(x * 0.024, z * 0.024) - 0.5) * 0.36
+  if (d >= 1) return -1 - (d - 1) * 9
+  const crown = Math.pow(1 - d * d, 0.8)
+  return crown * 17 * (0.72 + 0.56 * fbm(x * 0.03 + 9, z * 0.03 + 4)) + (fbm(x * 0.12, z * 0.12) - 0.5) * 0.7 - 0.7
 }
 
-/** Distance to the nearest footpath, wobbled so the edges are not ruler-straight. */
+const CLEARING_LEVEL = wildHeight(CLEARING.x, CLEARING.z)
+
+/** 1 on the town's level ground, 0 away from it. */
+export function townAmount(x: number, z: number): number {
+  return smoothstep(TOWN.west - 8, TOWN.west + 2, x) * (1 - smoothstep(TOWN.east - 2, TOWN.east + 8, x)) * (1 - smoothstep(-TOWN.back, -TOWN.back + 12, -z))
+}
+
+/** Height of the ground. Below the sea's surface means open water. */
+export function heightAt(x: number, z: number): number {
+  // South of the quay wall there is only sea.
+  if (z > TOWN.front) return -4
+  let h = wildHeight(x, z)
+  h = mix(h, DECK, townAmount(x, z))
+  const d = Math.hypot(x - CLEARING.x, z - CLEARING.z)
+  h = mix(h, CLEARING_LEVEL, 1 - smoothstep(CLEARING.radius, CLEARING.radius + 6, d))
+  return h
+}
+
+/** The footpath from the back of the town up to the clearing, as a chain of [x, z]. */
+export const PATH: readonly (readonly [number, number])[] = [
+  [TOWN_X + 9, -19],
+  [TOWN_X + 13, -30],
+  [TOWN_X + 22, -41],
+  [TOWN_X + 30, -50],
+  [CLEARING.x - 1, CLEARING.z + 3],
+]
+
+/** Distance to the footpath, wobbled so its edges are not ruler-straight. */
 export function pathDistance(x: number, z: number): number {
-  const wx = x + (valueNoise(x * 0.35, z * 0.35) - 0.5) * 1.5
-  const wz = z + (valueNoise(x * 0.35 + 40, z * 0.35 + 40) - 0.5) * 1.5
+  const wx = x + (valueNoise(x * 0.35, z * 0.35) - 0.5) * 1.4
+  const wz = z + (valueNoise(x * 0.35 + 40, z * 0.35 + 40) - 0.5) * 1.4
   let best = Infinity
-  for (const path of PATHS) {
-    for (let i = 0; i < path.length - 1; i++) {
-      best = Math.min(best, segmentDistance(wx, wz, path[i][0], path[i][1], path[i + 1][0], path[i + 1][1]))
-    }
+  for (let i = 0; i < PATH.length - 1; i++) {
+    const [ax, az] = PATH[i]
+    const [bx, bz] = PATH[i + 1]
+    const dx = bx - ax
+    const dz = bz - az
+    const t = Math.min(1, Math.max(0, ((wx - ax) * dx + (wz - az) * dz) / (dx * dx + dz * dz)))
+    best = Math.min(best, Math.hypot(wx - ax - dx * t, wz - az - dz * t))
   }
   return best
 }
 
-/** 0 on dry land, rising to 1 well inside the lake. */
-export function lakeAmount(x: number, z: number): number {
-  const d = Math.hypot((x - SITES.lake[0]) / 14, (z - SITES.lake[1]) / 17) + (valueNoise(x * 0.16, z * 0.16) - 0.5) * 0.16
-  return 1 - smoothstep(0.84, 1.1, d)
-}
-
-/** 1 on the railway's embankment, falling to 0 a few steps either side. */
-export function trackAmount(x: number, z: number): number {
-  // The embankment is wider on the west, where the platform stands.
-  const dx = x - TRACK_X
-  const across = dx < 0 ? 1 - smoothstep(6.2, 10, -dx) : 1 - smoothstep(2.2, 5.5, dx)
-  // The cutting ends hard against the northern hills, where the tunnel mouth stands.
-  return across * smoothstep(TRACK_NORTH - 4, TRACK_NORTH - 2, z) * (1 - smoothstep(TRACK_SOUTH + 2, TRACK_SOUTH + 8, z))
-}
-
-// The valley before anything was built in it.
-function wildHeight(x: number, z: number): number {
-  const r = Math.hypot(x, z + 2)
-  // The ring of hills is lower in the south, so the home hill stands clear of it.
-  const south = 1 - 0.75 * smoothstep(10, 50, z)
-  const rim = Math.pow(smoothstep(34, 80, r), 1.5) * 26 * south
-  const calm = 0.3 + 0.7 * smoothstep(12, 44, r)
-  const roll = ((fbm(x * 0.03 + 11, z * 0.03 + 5) - 0.5) * 5 + (fbm(x * 0.11, z * 0.11) - 0.5) * 0.9) * calm
-  const hill = 11 * bump(x - SITES.hill[0], z - SITES.hill[1], 13)
-  const mound = 2.4 * bump(x - SITES.oak[0], z - SITES.oak[1], 8)
-  return rim + roll + hill + mound + 0.6
-}
-
-/** Ground level under the railway and the platform. */
-export const TRACK_Y = 0.55
-
-// Level ground where something stands: x, z, radius of the flat part, width of the blend back to wild ground.
-const PADS: readonly (readonly [number, number, number, number])[] = [
-  [SITES.greenhouse[0], SITES.greenhouse[1], 3.6, 4],
-  [SITES.oak[0], SITES.oak[1], 3, 5],
-  [SITES.postbox[0] + 1.5, SITES.postbox[1] + 1.6, 4.6, 4],
-  ...WINDMILLS.map(([x, z, size]) => [x, z, 1.8 * size, 3] as const),
-]
-const PAD_LEVELS = PADS.map(([x, z]) => wildHeight(x, z))
-
-/** Height of the ground at any point of the valley. */
-export function heightAt(x: number, z: number): number {
-  let h = wildHeight(x, z)
-  for (let i = 0; i < PADS.length; i++) {
-    const [px, pz, radius, blend] = PADS[i]
-    const d = Math.hypot(x - px, z - pz)
-    if (d < radius + blend) h = mix(h, PAD_LEVELS[i], 1 - smoothstep(radius, radius + blend, d))
-  }
-  h = mix(h, TRACK_Y, trackAmount(x, z))
-  h = mix(h, -6, lakeAmount(x, z))
-  return h
-}
-
-/** A site's position on the ground, as [x, y, z]. */
-export function groundAt([x, z]: readonly [number, number], lift = 0): [number, number, number] {
+/** A point on the ground, as [x, y, z]. */
+export function groundAt(x: number, z: number, lift = 0): [number, number, number] {
   return [x, heightAt(x, z) + lift, z]
 }

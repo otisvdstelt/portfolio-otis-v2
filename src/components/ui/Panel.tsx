@@ -16,7 +16,7 @@ interface PanelProps {
  * Where a place's words are shown. Beside the landmark on a wide screen; a
  * sheet sliding up from the menu on a phone. It is real, selectable text over
  * the painting, never part of it, and it does not trap the visitor: the
- * valley and the menu stay usable while it is open.
+ * world and the menu stay usable while it is open.
  */
 export function Panel({ open, label, closeLabel, wide = false, onClose, children }: PanelProps) {
   const panel = useRef<HTMLElement>(null)

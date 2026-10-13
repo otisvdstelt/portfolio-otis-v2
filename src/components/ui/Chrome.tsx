@@ -1,6 +1,6 @@
+import { OWNER } from '../../content/site'
 import type { Weather } from '../../lib/air'
 import { PLACES, TRAIL, type PlaceId } from '../../lib/places'
-import { OWNER } from '../../content/site'
 
 /**
  * The filters that make paper look torn and paint look wet. Defined once;
@@ -36,7 +36,7 @@ export function PaperFilters() {
 }
 
 interface HeaderProps {
-  /** On the home hill the big title already says the name. */
+  /** At the halt the big title already says the name. */
   atHome: boolean
   weather: Weather
   onHome: () => void
@@ -69,22 +69,21 @@ export function Header({ atHome, weather, onHome, onWeather }: HeaderProps) {
 
 interface LandingProps {
   shown: boolean
-  /** False while the valley is still loading. */
+  /** False while the world is still loading. */
   ready: boolean
-  onEnter: () => void
+  onBoard: () => void
 }
 
-/** The title card on the home hill. */
-export function Landing({ shown, ready, onEnter }: LandingProps) {
+/** The title card over the sea: the name and the title in a written hand, and the way aboard. */
+export function Landing({ shown, ready, onBoard }: LandingProps) {
   return (
     <section className="landing" data-shown={shown} inert={!shown} aria-labelledby="owner-name">
       <h1 id="owner-name" className="landing-name">
         {OWNER.name}
       </h1>
       <p className="landing-title">{OWNER.title}</p>
-      <p className="landing-motto">“{OWNER.motto}”</p>
-      <button type="button" className="plaque" disabled={!ready} onClick={onEnter}>
-        Step inside
+      <button type="button" className="plaque" disabled={!ready} onClick={onBoard}>
+        Board the Train
       </button>
     </section>
   )
@@ -97,13 +96,12 @@ interface TrailProps {
 }
 
 /**
- * The trail: every place by name, on a strip of paper along the bottom. On a
- * desktop it is a second way to travel beside clicking the landmarks; on a
- * phone it is the menu.
+ * The trail: every scene by name, on a strip of paper along the bottom. On a
+ * desktop it is the timetable; on a phone it is the menu.
  */
 export function Trail({ place, shown, onVisit }: TrailProps) {
   return (
-    <nav className="trail paper" data-shown={shown} inert={!shown} aria-label="Places in the valley">
+    <nav className="trail paper" data-shown={shown} inert={!shown} aria-label="Stops along the line">
       <ul className="trail-list">
         {TRAIL.map((id) => (
           <li key={id}>

@@ -1,8 +1,8 @@
-// How the valley's loading is going. The sprout on the loading paper grows by
-// `value`; the loader in the 3D chunk writes it. `pending` is true for as long
-// as a Suspense fallback is on screen, which is what tells the sprout to stay.
+// Whether the world is still on its way. A Suspense fallback holds this open
+// for as long as it is mounted, and the sprout in the corner of the page keeps
+// growing for as long as it is held. It lives outside the 3D chunk so the
+// sprout can be drawn before three.js has even been downloaded.
 
-let value = 0.06
 let holds = 0
 let everHeld = false
 const listeners = new Set<() => void>()
@@ -11,14 +11,6 @@ const tell = () => {
 }
 
 export const progress = {
-  /** 0 to 1. Only ever grows. */
-  get: () => value,
-  set(next: number) {
-    const clamped = Math.min(1, Math.max(value, next))
-    if (clamped === value) return
-    value = clamped
-    tell()
-  },
   /** True until the first Suspense fallback has come and gone. */
   pending: () => holds > 0 || !everHeld,
   /** Called by the fallback while it is mounted; returns the release. */

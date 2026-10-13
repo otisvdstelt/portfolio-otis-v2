@@ -1,31 +1,39 @@
 @import 'tailwindcss';
 
-/* Night is a theme, not a media query: it follows the visitor's clock (see src/lib/air.ts). */
+/* Night is a theme, not a media query: it follows the visitor's clock, and it is always night at the campfire (see src/App.tsx). */
 @custom-variant dark (&:where([data-theme='night'], [data-theme='night'] *));
 
 @theme {
-  /* Three hands from one tradition of Japanese type design: a soft antique for
-     carved and printed words, a pen-written textbook hand for reading, and a
-     felt-pen scrawl for labels and notes. */
+  /* Four hands. A fountain-pen script for the name and the guestbook; a soft
+     antique for words that are printed, carved or painted on a board; a
+     pen-written textbook hand for reading; a felt-pen scrawl for labels. */
+  --font-script: 'Homemade Apple', 'Klee One', cursive;
   --font-display: 'Zen Antique Soft', 'Iowan Old Style', 'Palatino Linotype', serif;
   --font-sans: 'Klee One', 'Hiragino Maru Gothic ProN', ui-rounded, system-ui, sans-serif;
   --font-hand: 'Yomogi', 'Klee One', cursive;
 
-  /* Paper and ink. */
-  --color-paper: #f1e7d3;
-  --color-canvas: #f8f1e0;
-  --color-oat: #e3d4b4;
-  --color-rule: #cdb994;
-  --color-ink: #3a2a20;
-  --color-ink-soft: #6a5443;
+  /* The five colours everything else is mixed from. */
+  --color-canvas-base: #f7f4eb; /* warm antique cream parchment */
+  --color-canvas-text: #2c2823; /* deep charcoal ink */
+  --color-ghibli-green: #3b533e; /* lush moss */
+  --color-ghibli-sky: #a3c1ad; /* soft mist */
+  --color-ghibli-earth: #b8623b; /* rustic terracotta tile */
 
-  /* The valley's four accents, each with a shade deep enough to write with. */
-  --color-moss: #4f6f2f;
+  /* What the stylesheet calls them, and the few shades mixed between them. */
+  --color-paper: var(--color-canvas-base);
+  --color-canvas: #fcfaf3;
+  --color-oat: #ebe4d0;
+  --color-rule: #cfc5ab;
+  --color-ink: var(--color-canvas-text);
+  --color-ink-soft: #5e554a;
+  --color-moss: var(--color-ghibli-green);
   --color-clover: #86ae4a;
-  --color-terracotta: #c2643f;
-  --color-rust: #8e4127;
-  --color-cornflower: #7c9fd7;
-  --color-dusk: #40609a;
+  --color-terracotta: var(--color-ghibli-earth);
+  /* Terracotta deep enough to write with, and to carry pale lettering. */
+  --color-rust: #8f4526;
+  --color-mist: var(--color-ghibli-sky);
+  /* The colour of links and of the focus ring. */
+  --color-dusk: var(--color-ghibli-green);
   --color-gold: #e3b659;
 
   --color-leather: #5c3b29;
@@ -37,24 +45,24 @@
 @layer base {
   :root {
     /* The tooth of the sheet: fine brown speckle, tiled. */
-    --tooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .23 0 0 0 0 .16 0 0 0 0 .12 .2 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --tooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .17 0 0 0 0 .16 0 0 0 0 .14 .2 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     /* A pen stroke under whatever is chosen. */
-    --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C8 1 12 7 20 4S32 1 40 4s12 3 19-1' fill='none' stroke='%23c2643f' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
-    --shadow-rest: 0 1px 1px rgb(58 42 32 / 0.18), 0 8px 18px -8px rgb(58 42 32 / 0.42);
+    --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C8 1 12 7 20 4S32 1 40 4s12 3 19-1' fill='none' stroke='%23b8623b' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --shadow-rest: 0 1px 1px rgb(44 40 35 / 0.18), 0 8px 18px -8px rgb(44 40 35 / 0.42);
     --trail-height: 4.25rem;
     color-scheme: light;
   }
 
   [data-theme='night'] {
-    --color-paper: #171b2e;
+    --color-canvas-base: #171b2e;
+    --color-canvas-text: #f3ead8;
     --color-canvas: #20263f;
     --color-oat: #2b3254;
     --color-rule: #3d4672;
-    --color-ink: #f3ead8;
     --color-ink-soft: #c9c0ae;
     --color-moss: #a9c979;
     --color-rust: #f0a27f;
-    --color-dusk: #a9c0ee;
+    --color-dusk: #bcd8c5;
     --color-leather: #2e1e17;
     --color-leather-deep: #1c120d;
     --shadow-rest: 0 1px 1px rgb(0 0 0 / 0.4), 0 10px 22px -8px rgb(0 0 0 / 0.7);
@@ -70,7 +78,7 @@
   body {
     margin: 0;
     overflow: hidden;
-    /* Bare paper: what shows before the valley is painted, and round its ragged edge after. */
+    /* Bare paper: what shows before the world is painted, and round its ragged edge after. */
     background: var(--color-paper) var(--tooth);
     color: var(--color-ink);
     font-family: var(--font-sans);
@@ -97,7 +105,7 @@
 
   ::selection {
     background: var(--color-gold);
-    color: #3a2a20;
+    color: #2c2823;
   }
 }
 
@@ -252,42 +260,28 @@
     opacity: 0.62;
   }
 
+  /* The name, in a fountain-pen hand. A script needs air round it: loose leading, no tightening. */
   .landing-name {
     margin: 0;
-    font-family: var(--font-display);
+    font-family: var(--font-script);
     font-weight: 400;
-    font-size: clamp(2.7rem, 7.2vw, 5.75rem);
-    line-height: 0.98;
-    letter-spacing: -0.012em;
+    font-size: clamp(1.9rem, 4.7vw, 4.1rem);
+    line-height: 1.5;
+    /* The face sets its words close; open them up so three short words do not run into one. */
+    word-spacing: 0.28em;
     text-wrap: balance;
   }
 
   .landing-title {
-    margin: 1.1rem 0 0;
-    font-size: clamp(1.1rem, 1.9vw, 1.4rem);
-    font-weight: 600;
-    line-height: 1.35;
-  }
-
-  .landing-motto {
-    margin: 0.4rem 0 0;
+    margin: 0.5rem 0 0;
     font-family: var(--font-hand);
-    font-size: clamp(1.1rem, 1.8vw, 1.35rem);
-    line-height: 1.4;
-    color: var(--color-ink);
+    font-size: clamp(1.25rem, 2.1vw, 1.7rem);
+    line-height: 1.35;
     rotate: -0.8deg;
     transform-origin: 0 50%;
   }
 
-  .landing-status {
-    min-height: 1.5rem;
-    margin: 0.8rem 0 0;
-    font-family: var(--font-hand);
-    font-size: 1.05rem;
-    color: var(--color-ink-soft);
-  }
-
-  /* The way in: a hand-cut terracotta label. It sits a little crooked and straightens under the hand. */
+  /* The way aboard: a hand-cut terracotta ticket. It sits a little crooked and straightens under the hand. */
   .plaque {
     position: relative;
     isolation: isolate;
@@ -295,9 +289,10 @@
     padding: 0.8rem 1.9rem 0.9rem;
     border: 0;
     background: none;
-    color: #f8f1e0;
+    color: #fcfaf3;
     font-family: var(--font-display);
-    font-size: 1.3rem;
+    font-size: 1.42rem;
+    letter-spacing: 0.01em;
     line-height: 1.2;
     rotate: -1.6deg;
     transition:
@@ -312,11 +307,11 @@
     inset: 0;
     z-index: -1;
     border-radius: 5px 9px 6px 10px;
-    background: #8e4127 var(--tooth);
+    background: #9a4c2a var(--tooth);
     box-shadow:
       inset 0 0 0 2px rgb(248 241 224 / 0.22),
       inset 0 -6px 12px -6px rgb(40 16 8 / 0.5);
-    filter: url(#deckle-fine) drop-shadow(0 2px 0 #5f2915) drop-shadow(0 12px 12px rgb(58 42 32 / 0.34));
+    filter: url(#deckle-fine) drop-shadow(0 2px 0 #63301a) drop-shadow(0 12px 12px rgb(58 42 32 / 0.34));
     transition: filter 420ms var(--ease-out-expo);
   }
 
@@ -401,7 +396,7 @@
   }
 
   /* On a phone the trail is the app's menu: full width, pinned to the bottom, one plain word per stop. */
-  @media (max-width: 767px) {
+  @media (max-width: 1023px) {
     .trail {
       left: 0;
       right: 0;
@@ -443,19 +438,19 @@
     }
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     .trail-short {
       display: none;
     }
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 1023px) {
     .trail-long {
       display: none;
     }
   }
 
-  /* ------------------------------------------------------------ tags pinned in the valley */
+  /* ------------------------------------------------------------ tags pinned in the world */
 
   .tag-anchor {
     pointer-events: none;
@@ -471,7 +466,7 @@
     padding: 0.3rem 0.8rem 0.4rem;
     border: 0;
     background: none;
-    color: #3a2a20;
+    color: #2c2823;
     font-family: var(--font-hand);
     font-size: 1.08rem;
     line-height: 1.25;
@@ -492,7 +487,7 @@
     inset: 0;
     z-index: -1;
     border-radius: 3px 6px 4px 7px;
-    background: #f8f1e0 var(--tooth);
+    background: #fcfaf3 var(--tooth);
     filter: url(#deckle-fine) drop-shadow(0 1px 0.5px rgb(58 42 32 / 0.3)) drop-shadow(0 5px 6px rgb(58 42 32 / 0.28));
   }
 
@@ -503,13 +498,13 @@
 
   .tag-note {
     font-size: 0.92rem;
-    color: #6a5443;
+    color: #5e554a;
   }
 
   .tag-list {
     margin-top: 0.1rem;
     font-size: 0.98rem;
-    color: #6a5443;
+    color: #5e554a;
     text-wrap: balance;
   }
 
@@ -547,7 +542,7 @@
       visibility 0s 700ms;
   }
 
-  /* Only the sheet itself takes the pointer; the empty space round it still belongs to the valley. */
+  /* Only the sheet itself takes the pointer; the empty space round it still belongs to the world. */
   .overlay > .panel {
     pointer-events: none;
   }
@@ -593,7 +588,7 @@
     rotate: -1deg;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 1023px) {
     .panel,
     .panel[data-wide='true'] {
       top: auto;
@@ -643,7 +638,7 @@
     padding: 1.6rem 1.7rem 1.8rem;
   }
 
-  @media (max-width: 767px) {
+  @media (max-width: 1023px) {
     .sheet {
       padding: 1.5rem 1.2rem 1.4rem;
     }
@@ -662,10 +657,10 @@
     text-decoration-color: currentColor;
   }
 
-  /* ------------------------------------------------------------ the journal (about) */
+  /* ------------------------------------------------------------ the guestbook (about) */
 
-  /* A leather cover, worn pale at the corners, stitched round the edge, with the pages lying open on it. */
-  .journal {
+  /* The guestbook on the bakery counter: a leather cover, worn pale at the corners and stitched round the edge, with the pages lying open on it. */
+  .guestbook {
     position: relative;
     padding: 0.8rem 0.85rem 0.95rem;
     border-radius: 10px 14px 14px 10px;
@@ -681,7 +676,7 @@
       0 22px 30px -14px rgb(40 22 12 / 0.6);
   }
 
-  .journal::before {
+  .guestbook::before {
     content: '';
     position: absolute;
     inset: 0.32rem;
@@ -691,19 +686,19 @@
   }
 
   /* The ribbon marking the place. */
-  .journal::after {
+  .guestbook::after {
     content: '';
     position: absolute;
     top: -0.3rem;
     right: 2.6rem;
     width: 0.8rem;
     height: 3.4rem;
-    background: linear-gradient(90deg, #a7502f, #c2643f 45%, #9b4b31);
+    background: linear-gradient(90deg, #9a4c2a, #b8623b 45%, #8f4526);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
     filter: drop-shadow(0 3px 2px rgb(40 22 12 / 0.4));
   }
 
-  .journal-pages {
+  .guestbook-pages {
     container-type: inline-size;
     position: relative;
     border-radius: 3px 5px 5px 3px;
@@ -715,7 +710,7 @@
       0 4px 0 -1px var(--color-rule);
   }
 
-  .journal-spread {
+  .guestbook-spread {
     display: grid;
   }
 
@@ -727,9 +722,9 @@
     border-top: 1px dashed var(--color-rule);
   }
 
-  /* With room for it the journal lies open as a spread, with the shadow of the gutter down the middle. */
+  /* With room for it the book lies open as a spread, with the shadow of the gutter down the middle. */
   @container (min-width: 37rem) {
-    .journal-spread {
+    .guestbook-spread {
       grid-template-columns: 1fr 1fr;
       background: linear-gradient(90deg, transparent 47.5%, color-mix(in srgb, var(--color-leather) 22%, transparent) 50%, transparent 52.5%);
     }
@@ -778,13 +773,13 @@
     color: var(--color-ink-soft);
   }
 
-  .trail-log {
+  .journey {
     margin: 0.5rem 0 0;
     padding: 0;
     list-style: none;
   }
 
-  .trail-log li {
+  .journey li {
     display: grid;
     grid-template-columns: 3.4rem 1fr;
     gap: 0.5rem;
@@ -792,11 +787,11 @@
     line-height: 1.45;
   }
 
-  .trail-log li + li {
+  .journey li + li {
     border-top: 1px dashed var(--color-rule);
   }
 
-  .trail-log time {
+  .journey time {
     font-family: var(--font-hand);
     font-size: 1.08rem;
     color: var(--color-rust);
@@ -902,12 +897,15 @@
     }
   }
 
-  /* ------------------------------------------------------------ the docket (one project) */
+  /* ------------------------------------------------------------ the sheet (one project) */
 
+  /* A sheet of parchment on a roller, hung from the ceiling of the car. It is
+     pinned to the top of the window and comes down like a blind. */
   .docket {
-    width: min(42rem, calc(100vw - 1.5rem));
-    max-height: min(46rem, calc(100svh - 2rem));
-    margin: auto;
+    width: min(41rem, calc(100vw - 1.5rem));
+    max-width: none;
+    max-height: none;
+    margin: 0 auto auto;
     padding: 0;
     border: 0;
     background: none;
@@ -921,18 +919,20 @@
   }
 
   .docket[open] {
-    animation: docket-in 620ms var(--ease-out-expo);
+    animation: unroll 950ms var(--ease-out-expo);
   }
 
   .docket[open]::backdrop {
     animation: fade-in 400ms ease-out;
   }
 
-  @keyframes docket-in {
+  @keyframes unroll {
     from {
-      opacity: 0;
-      translate: 0 2.5rem;
-      rotate: -2.5deg;
+      translate: 0 -104%;
+      rotate: -1.4deg;
+    }
+    55% {
+      rotate: 0.5deg;
     }
   }
 
@@ -942,40 +942,198 @@
     }
   }
 
+  .scroll {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100svh - 0.75rem);
+    padding-top: 1.5rem;
+    transform-origin: 50% 0;
+  }
+
+  /* The two cords it hangs by. */
+  .scroll::before {
+    content: '';
+    position: absolute;
+    inset: 0 22% auto;
+    height: 1.6rem;
+    border-inline: 2px solid var(--color-oat);
+  }
+
+  /* The wooden rods at head and foot, with a brass knob on each end. */
+  .scroll-rod {
+    position: relative;
+    z-index: 1;
+    flex: none;
+    height: 0.95rem;
+    margin: 0 -0.85rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(180deg, #b3855c, #8c5f3e 55%, #5f4231);
+    box-shadow:
+      inset 0 1px 0 rgb(255 235 200 / 0.3),
+      0 6px 10px -4px rgb(30 16 8 / 0.6);
+  }
+
+  .scroll-rod::before,
+  .scroll-rod::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    translate: 0 -50%;
+    background: radial-gradient(circle at 35% 30%, #f3d58a, #cf9f49 55%, #8a6327);
+  }
+
+  .scroll-rod::before {
+    left: -0.5rem;
+  }
+
+  .scroll-rod::after {
+    right: -0.5rem;
+  }
+
   /* Parchment: tanned toward the edges, the way a sheet ages from the outside in. */
   .parchment {
     position: relative;
     isolation: isolate;
-    max-height: inherit;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--color-rule) transparent;
-    padding: clamp(1.5rem, 4vw, 2.6rem) clamp(1.3rem, 4vw, 2.7rem) clamp(1.4rem, 3vw, 2.2rem);
-    rotate: -0.4deg;
-    border-radius: 4px 7px 5px 8px;
+    padding: clamp(1.3rem, 3.4vw, 2.2rem) clamp(1.3rem, 4vw, 2.7rem) clamp(1.2rem, 3vw, 1.8rem);
     background:
       radial-gradient(130% 110% at 50% 45%, transparent 55%, color-mix(in srgb, #a9763f 34%, transparent) 100%),
       color-mix(in srgb, var(--color-oat) 55%, var(--color-canvas)) var(--tooth);
     box-shadow:
       inset 0 0 0 1px color-mix(in srgb, var(--color-leather) 22%, transparent),
-      0 2px 1px rgb(40 22 12 / 0.3),
-      0 30px 50px -18px rgb(30 16 8 / 0.7);
+      0 24px 40px -18px rgb(30 16 8 / 0.6);
   }
 
-  .docket-title {
+  .sheet-title {
     margin: 0;
-    max-width: 16ch;
+    max-width: 15ch;
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: clamp(1.9rem, 5vw, 2.7rem);
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
     line-height: 1.04;
     text-wrap: balance;
   }
 
-  .docket-summary {
-    margin: 0.9rem 0 0;
+  .sheet-summary {
+    margin: 0.8rem 0 0;
     max-width: 56ch;
+  }
+
+  .sheet-heading {
+    margin: 1.5rem 0 0.4rem;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.08rem;
+    line-height: 1.25;
+    color: var(--color-rust);
+  }
+
+  .sheet-stack {
+    margin: 0;
+    font-family: var(--font-hand);
+    font-size: 1.14rem;
+    line-height: 1.45;
+  }
+
+  /* What the repository is made of: one brush stroke, a length of each colour for each language. */
+  .blend {
+    display: flex;
+    height: 0.8rem;
+    overflow: hidden;
+    border-radius: 0.4rem 0.2rem 0.5rem 0.25rem;
+    filter: url(#deckle-fine);
+  }
+
+  .blend span {
+    min-width: 3px;
+  }
+
+  .blend span:nth-child(1),
+  .blend-key span:nth-child(1)::before {
+    background: var(--color-terracotta);
+  }
+
+  .blend span:nth-child(2),
+  .blend-key span:nth-child(2)::before {
+    background: var(--color-moss);
+  }
+
+  .blend span:nth-child(3),
+  .blend-key span:nth-child(3)::before {
+    background: var(--color-gold);
+  }
+
+  .blend span:nth-child(4),
+  .blend-key span:nth-child(4)::before {
+    background: var(--color-mist);
+  }
+
+  .blend span:nth-child(5),
+  .blend-key span:nth-child(5)::before {
+    background: var(--color-ink-soft);
+  }
+
+  .blend-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem 1rem;
+    margin: 0.4rem 0 0;
+    font-family: var(--font-hand);
+    font-size: 1.04rem;
+  }
+
+  .blend-key span::before {
+    content: '';
+    display: inline-block;
+    width: 0.62rem;
+    height: 0.62rem;
+    margin-right: 0.35rem;
+    border-radius: 58% 42% 55% 45% / 45% 58% 42% 55%;
+  }
+
+  /* Lines waiting to be written, while GitHub answers. */
+  .waiting {
+    display: grid;
+    gap: 0.6rem;
+    padding: 0.3rem 0;
+  }
+
+  .waiting span {
+    height: 0.8rem;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-leather) 26%, transparent);
+    animation: waiting 1.6s ease-in-out infinite;
+  }
+
+  .waiting span:nth-child(2) {
+    width: 72%;
+    animation-delay: 0.15s;
+  }
+
+  .waiting span:nth-child(3) {
+    width: 46%;
+    animation-delay: 0.3s;
+  }
+
+  .paths dd {
+    overflow-wrap: anywhere;
+  }
+
+  .sheet-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    margin-top: 1.2rem;
   }
 
   /* The rubber stamp in the corner. */
@@ -1012,24 +1170,11 @@
     text-transform: uppercase;
   }
 
-  .placeholder-note {
-    display: inline-block;
-    margin: 1rem 0 0;
-    padding: 0.2rem 0.7rem 0.25rem;
-    border: 1.5px dashed var(--color-rust);
-    border-radius: 3px;
-    color: var(--color-rust);
-    font-family: var(--font-hand);
-    font-size: 1.05rem;
-    line-height: 1.35;
-    rotate: -1deg;
-  }
-
   .specs {
     display: grid;
     grid-template-columns: max-content 1fr;
     gap: 0 1.4rem;
-    margin: 1.5rem 0 0;
+    margin: 0.7rem 0 0;
   }
 
   .specs dt,
@@ -1043,28 +1188,6 @@
     font-family: var(--font-hand);
     font-size: 1.06rem;
     color: var(--color-ink-soft);
-  }
-
-  .docket-notes {
-    margin: 1.3rem 0 0;
-    padding-left: 1.3rem;
-    list-style: '–  ';
-  }
-
-  .docket-notes li {
-    padding: 0.14rem 0;
-  }
-
-  .docket-notes li::marker {
-    color: var(--color-rust);
-  }
-
-  .docket-foot {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.7rem 0.9rem;
-    margin-top: 1.7rem;
   }
 
   /* An inked button: outline drawn with a pen, filling in when pressed toward. */
@@ -1096,14 +1219,14 @@
   }
 
   .inked[data-tone='rust'] {
-    border-color: #8e4127;
-    background: #8e4127;
-    color: #f8f1e0;
+    border-color: #8f4526;
+    background: #8f4526;
+    color: #fcfaf3;
   }
 
   .inked[data-tone='rust']:hover:not(:disabled) {
     background: #6f3019;
-    color: #f8f1e0;
+    color: #fcfaf3;
   }
 
   .inked[aria-disabled='true'],
@@ -1132,43 +1255,41 @@
     color: var(--color-ink);
   }
 
-  /* ------------------------------------------------------------ field notes (skills) */
+  /* ------------------------------------------------------------ the inventory (skills) */
 
-  .mills {
+  .shelves {
     margin: 1.1rem 0 0;
     padding: 0;
     list-style: none;
   }
 
-  .mill {
+  .shelf {
     display: grid;
     grid-template-columns: 1.5rem 1fr;
-    gap: 0.1rem 0.75rem;
+    gap: 0.05rem 0.75rem;
     width: 100%;
-    padding: 0.7rem 0.5rem 0.75rem 0.3rem;
+    padding: 0.65rem 0.5rem 0.7rem 0.3rem;
     border: 0;
     border-top: 1px dashed var(--color-rule);
     background: none;
     color: var(--color-ink);
     text-align: left;
-    transition:
-      translate 320ms var(--ease-out-expo),
-      background-color 200ms;
+    transition: translate 320ms var(--ease-out-expo);
   }
 
-  .mills li:first-child .mill {
+  .shelves li:first-child .shelf {
     border-top: 0;
   }
 
-  .mill:hover,
-  .mill:focus-visible,
-  .mill[data-hot='true'] {
+  .shelf:hover,
+  .shelf:focus-visible,
+  .shelf[data-hot='true'] {
     translate: 0.4rem 0;
   }
 
-  /* A dab of the colour the mill's cap is painted in, turning like a sail when the mill is picked. */
-  .mill-dab {
-    grid-row: span 2;
+  /* A dab of the colour the cluster glows in. Chosen, it lifts off the paper as the artefacts lift off their shelf. */
+  .shelf-dab {
+    grid-row: span 3;
     align-self: start;
     width: 1.3rem;
     height: 1.3rem;
@@ -1176,26 +1297,36 @@
     border-radius: 58% 42% 55% 45% / 45% 58% 42% 55%;
     background: var(--dab);
     box-shadow: inset -2px -3px 0 rgb(40 22 12 / 0.18);
-    transition: rotate 900ms var(--ease-out-expo);
+    transition:
+      translate 500ms var(--ease-out-expo),
+      box-shadow 500ms var(--ease-out-expo);
   }
 
-  .mill:hover .mill-dab,
-  .mill:focus-visible .mill-dab,
-  .mill[data-hot='true'] .mill-dab {
-    rotate: 200deg;
+  .shelf:hover .shelf-dab,
+  .shelf:focus-visible .shelf-dab,
+  .shelf[data-hot='true'] .shelf-dab {
+    translate: 0 -0.3rem;
+    box-shadow:
+      inset -2px -3px 0 rgb(40 22 12 / 0.18),
+      0 0.5rem 0.7rem -0.1rem var(--dab);
   }
 
-  .mill-name {
+  .shelf-name {
     font-family: var(--font-display);
     font-size: 1.24rem;
     line-height: 1.2;
   }
 
-  .mill-skills {
-    font-family: var(--font-hand);
-    font-size: 1.1rem;
-    line-height: 1.4;
+  .shelf-things {
+    font-size: 0.94rem;
+    line-height: 1.35;
     color: var(--color-ink-soft);
+  }
+
+  .shelf-skills {
+    font-family: var(--font-hand);
+    font-size: 1.12rem;
+    line-height: 1.4;
   }
 
   /* ------------------------------------------------------------ the letter (contact) */
@@ -1315,7 +1446,9 @@
     min-height: 2.75rem;
     padding: 0.2rem 0.95rem 0.3rem;
     border-radius: 5px 8px 6px 9px;
-    background: linear-gradient(172deg, #cba77c, #b3855c) var(--tooth);
+    background:
+      var(--tooth),
+      linear-gradient(172deg, #cba77c, #b3855c);
     box-shadow:
       inset 0 0 0 1px rgb(60 36 20 / 0.35),
       inset 0 -5px 6px -4px rgb(60 36 20 / 0.5),
@@ -1343,46 +1476,66 @@
 
   /* ------------------------------------------------------------ the sprout (loading) */
 
+  /* A small plant in the corner that grows while anything is being fetched.
+     The growth is a slow transition toward nearly-grown; when the work is
+     done the same transition is simply sent the rest of the way, quickly. */
   .sprout {
     position: absolute;
-    inset: 0;
-    z-index: 5;
-    display: grid;
-    place-items: end center;
-    padding-bottom: clamp(5rem, 20vh, 11rem);
+    left: clamp(0.6rem, 2vw, 1.6rem);
+    bottom: 1rem;
+    z-index: 3;
+    width: clamp(3.4rem, 6vw, 4.6rem);
     pointer-events: none;
-    transition:
-      opacity 900ms ease-out 250ms,
-      filter 900ms ease-out 250ms;
+    transition: opacity 600ms ease-out 600ms;
   }
 
-  .sprout[data-leaving='true'] {
+  @media (max-width: 1023px) {
+    .sprout {
+      bottom: calc(var(--trail-height) + env(safe-area-inset-bottom) + 0.4rem);
+    }
+  }
+
+  .sprout[data-done='true'] {
     opacity: 0;
-    filter: blur(8px);
-  }
-
-  .sprout-figure {
-    display: grid;
-    justify-items: center;
-    gap: 0.2rem;
   }
 
   .sprout svg {
-    width: clamp(8rem, 22vw, 11rem);
+    display: block;
+    width: 100%;
     height: auto;
     overflow: visible;
   }
 
   .sprout-stem {
     stroke-dasharray: 1;
-    stroke-dashoffset: calc(1 - var(--grown));
-    transition: stroke-dashoffset 900ms var(--ease-out-expo);
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 7s cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
   .sprout-leaf {
     transform-box: fill-box;
-    scale: var(--leaf, 0);
-    transition: scale 1100ms var(--ease-out-expo);
+    scale: 0;
+    transition: scale 1.6s var(--ease-out-expo);
+  }
+
+  .sprout[data-growing='true'] .sprout-stem {
+    stroke-dashoffset: 0.16;
+  }
+
+  .sprout[data-growing='true'] .sprout-leaf {
+    scale: 0.9;
+    transition-delay: calc(var(--at) * 6s);
+  }
+
+  .sprout[data-done='true'] .sprout-stem {
+    stroke-dashoffset: 0;
+    transition-duration: 500ms;
+  }
+
+  .sprout[data-done='true'] .sprout-leaf {
+    scale: 1;
+    transition-duration: 500ms;
+    transition-delay: 0s;
   }
 
   .sprout-sway {
@@ -1401,13 +1554,7 @@
     }
   }
 
-  .sprout-note {
-    font-family: var(--font-hand);
-    font-size: 1.1rem;
-    color: var(--color-ink-soft);
-  }
-
-  /* ------------------------------------------------------------ when the valley cannot be painted */
+  /* ------------------------------------------------------------ when the world cannot be painted */
 
   .unpainted {
     position: absolute;

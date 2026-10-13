@@ -1,7 +1,7 @@
 // A small modelling kit: painted primitives that are stacked, leaned and
-// merged into the valley's landmarks. Everything is built bottom-up from
+// merged into everything that stands in the world. All of it is built from
 // simple solids, coloured per vertex, so one cel-shaded material paints it all.
-import { BoxGeometry, BufferAttribute, Color, CylinderGeometry, Euler, IcosahedronGeometry, Matrix4, Quaternion, Vector3, type BufferGeometry } from 'three'
+import { BoxGeometry, BufferAttribute, Color, CylinderGeometry, Euler, ExtrudeGeometry, IcosahedronGeometry, Matrix4, Quaternion, Shape, TorusGeometry, Vector2, Vector3, type BufferGeometry } from 'three'
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { valueNoise } from './terrain.ts'
 
@@ -19,8 +19,11 @@ export interface Place {
 export interface Part {
   name: string
   geometry: BufferGeometry
-  /** `paint` is cel-shaded from vertex colours; `glass` is the same, see-through; `glow` is unlit and lights up at night. */
-  material: 'paint' | 'glass' | 'glow'
+  /**
+   * `paint` is cel-shaded from vertex colours; `glass` is the same, see-through; `glow` is unlit and lights up
+   * at night; `light` is a shaft of sunlight, added onto whatever is behind it.
+   */
+  material: 'paint' | 'glass' | 'glow' | 'light'
   pivot?: readonly [number, number, number]
 }
 
@@ -81,6 +84,19 @@ export function box(width: number, height: number, depth: number, colour: Tint, 
   return finish(new BoxGeometry(width, height, depth).translate(0, height / 2, 0), colour, place)
 }
 
+/** A block named by its corners instead of its middle: walls, shelves, floors. */
+export function slab(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, colour: Tint): BufferGeometry {
+  return box(Math.abs(x1 - x0), Math.abs(y1 - y0), Math.abs(z1 - z0), colour, { at: [(x0 + x1) / 2, Math.min(y0, y1), (z0 + z1) / 2] })
+}
+
+/** A flat outline pushed through a thickness: gables, awnings, book covers. Drawn in x and y, centred on z. */
+export function extrude(outline: readonly (readonly [number, number])[], depth: number, colour: Tint, place?: Place): BufferGeometry {
+  const shape = new Shape(outline.map(([x, y]) => new Vector2(x, y)))
+  const raw = new ExtrudeGeometry(shape, { depth, bevelEnabled: false }).translate(0, 0, -depth / 2)
+  raw.deleteAttribute('uv')
+  return put(tint(mergeVertices(raw, 1e-4), colour), place)
+}
+
 /** A post, log or tower standing on its base; `sides` as low as 3 makes a prism. */
 export function cyl(topRadius: number, bottomRadius: number, height: number, colour: Tint, place?: Place, sides = 10): BufferGeometry {
   return finish(new CylinderGeometry(topRadius, bottomRadius, height, sides, 1).translate(0, height / 2, 0), colour, place)
@@ -89,6 +105,11 @@ export function cyl(topRadius: number, bottomRadius: number, height: number, col
 /** A cone standing on its base. */
 export function cone(radius: number, height: number, colour: Tint, place?: Place, sides = 10): BufferGeometry {
   return cyl(0.001, radius, height, colour, place, sides)
+}
+
+/** A ring standing upright, facing z: strap handles, hoops, wreaths. Centred. */
+export function ring(radius: number, thickness: number, colour: Tint, place?: Place, sides = 12): BufferGeometry {
+  return finish(new TorusGeometry(radius, thickness, 5, sides), colour, place)
 }
 
 /** A lumpy ball, centred: leaves, bushes, stones, clouds, smoke. */
@@ -125,6 +146,20 @@ export function roughen<G extends BufferGeometry>(geometry: G, amount: number, s
       y + (valueNoise(ky * 0.577 + kz * 0.21, kx * 0.811 + 5) - 0.5) * 2 * amount,
       z + (valueNoise(kz * 0.659 + kx * 0.43, ky * 0.727 + 9) - 0.5) * 2 * amount,
     )
+  }
+  return geometry
+}
+
+/** Flips a piece across the line of the railway (z becomes -z), keeping its faces the right way out. */
+export function mirrorZ<G extends BufferGeometry>(geometry: G): G {
+  geometry.scale(1, 1, -1)
+  const index = geometry.getIndex()
+  if (index) {
+    for (let i = 0; i < index.count; i += 3) {
+      const b = index.getX(i + 1)
+      index.setX(i + 1, index.getX(i + 2))
+      index.setX(i + 2, b)
+    }
   }
   return geometry
 }
