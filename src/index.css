@@ -1,0 +1,1434 @@
+@import 'tailwindcss';
+
+/* Night is a theme, not a media query: it follows the visitor's clock (see src/lib/air.ts). */
+@custom-variant dark (&:where([data-theme='night'], [data-theme='night'] *));
+
+@theme {
+  /* Three hands from one tradition of Japanese type design: a soft antique for
+     carved and printed words, a pen-written textbook hand for reading, and a
+     felt-pen scrawl for labels and notes. */
+  --font-display: 'Zen Antique Soft', 'Iowan Old Style', 'Palatino Linotype', serif;
+  --font-sans: 'Klee One', 'Hiragino Maru Gothic ProN', ui-rounded, system-ui, sans-serif;
+  --font-hand: 'Yomogi', 'Klee One', cursive;
+
+  /* Paper and ink. */
+  --color-paper: #f1e7d3;
+  --color-canvas: #f8f1e0;
+  --color-oat: #e3d4b4;
+  --color-rule: #cdb994;
+  --color-ink: #3a2a20;
+  --color-ink-soft: #6a5443;
+
+  /* The valley's four accents, each with a shade deep enough to write with. */
+  --color-moss: #4f6f2f;
+  --color-clover: #86ae4a;
+  --color-terracotta: #c2643f;
+  --color-rust: #8e4127;
+  --color-cornflower: #7c9fd7;
+  --color-dusk: #40609a;
+  --color-gold: #e3b659;
+
+  --color-leather: #5c3b29;
+  --color-leather-deep: #3e271a;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  :root {
+    /* The tooth of the sheet: fine brown speckle, tiled. */
+    --tooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .23 0 0 0 0 .16 0 0 0 0 .12 .2 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    /* A pen stroke under whatever is chosen. */
+    --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C8 1 12 7 20 4S32 1 40 4s12 3 19-1' fill='none' stroke='%23c2643f' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    --shadow-rest: 0 1px 1px rgb(58 42 32 / 0.18), 0 8px 18px -8px rgb(58 42 32 / 0.42);
+    --trail-height: 4.25rem;
+    color-scheme: light;
+  }
+
+  [data-theme='night'] {
+    --color-paper: #171b2e;
+    --color-canvas: #20263f;
+    --color-oat: #2b3254;
+    --color-rule: #3d4672;
+    --color-ink: #f3ead8;
+    --color-ink-soft: #c9c0ae;
+    --color-moss: #a9c979;
+    --color-rust: #f0a27f;
+    --color-dusk: #a9c0ee;
+    --color-leather: #2e1e17;
+    --color-leather-deep: #1c120d;
+    --shadow-rest: 0 1px 1px rgb(0 0 0 / 0.4), 0 10px 22px -8px rgb(0 0 0 / 0.7);
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    /* Bare paper: what shows before the valley is painted, and round its ragged edge after. */
+    background: var(--color-paper) var(--tooth);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: default;
+  }
+
+  :focus-visible {
+    outline: 2.5px solid var(--color-dusk);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: var(--color-gold);
+    color: #3a2a20;
+  }
+}
+
+@layer components {
+  /* ------------------------------------------------------------ the stage */
+
+  .stage {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .world {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Everything written over the painting lets the pointer through to it, except the things you can press. */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    pointer-events: none;
+  }
+
+  .overlay > * {
+    pointer-events: auto;
+  }
+
+  .hand {
+    font-family: var(--font-hand);
+    letter-spacing: 0.01em;
+  }
+
+  /* ------------------------------------------------------------ paper */
+
+  /* A cut or torn piece of paper. The sheet itself is a pseudo-element pushed
+     through the deckle filter, so its edge is ragged and the words on it stay sharp. */
+  .paper {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .paper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 3px 5px 4px 6px;
+    background: var(--color-canvas) var(--tooth);
+    box-shadow: inset 0 0 0 1px rgb(58 42 32 / 0.1);
+    filter: url(#deckle) drop-shadow(0 1px 0.5px rgb(58 42 32 / 0.2)) drop-shadow(0 9px 12px rgb(58 42 32 / 0.26));
+  }
+
+  [data-theme='night'] .paper::before {
+    filter: url(#deckle) drop-shadow(0 1px 0.5px rgb(0 0 0 / 0.5)) drop-shadow(0 10px 16px rgb(0 0 0 / 0.55));
+  }
+
+  /* A slip: a small scrap for a label or a pair of words. */
+  .slip {
+    padding: 0.4rem 0.95rem 0.45rem;
+    border: 0;
+    background: none;
+    color: var(--color-ink);
+  }
+
+  .slip.paper::before {
+    filter: url(#deckle-fine) drop-shadow(0 1px 0.5px rgb(58 42 32 / 0.22)) drop-shadow(0 5px 7px rgb(58 42 32 / 0.22));
+  }
+
+  /* ------------------------------------------------------------ header */
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    line-height: 1.2;
+    rotate: -1.2deg;
+    transition:
+      opacity 500ms var(--ease-out-expo),
+      translate 500ms var(--ease-out-expo),
+      rotate 300ms var(--ease-out-expo);
+  }
+
+  .wordmark:hover {
+    rotate: 0.4deg;
+  }
+
+  .wordmark[data-hidden='true'] {
+    opacity: 0;
+    translate: 0 -0.75rem;
+    pointer-events: none;
+  }
+
+  /* The weather switch: two words, the true one underlined in pen. */
+  .weather {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-family: var(--font-hand);
+    font-size: 1.12rem;
+    line-height: 1.3;
+    rotate: 1deg;
+  }
+
+  .weather-word {
+    padding-bottom: 0.3rem;
+    color: var(--color-ink-soft);
+    background: var(--squiggle) no-repeat 50% 100% / 0% 0.42rem;
+    transition:
+      background-size 380ms var(--ease-out-expo),
+      color 200ms;
+  }
+
+  .weather-word[data-on='true'] {
+    color: var(--color-ink);
+    background-size: 100% 0.42rem;
+  }
+
+  .weather-sep {
+    color: var(--color-rule);
+  }
+
+  /* ------------------------------------------------------------ landing */
+
+  .landing {
+    position: absolute;
+    top: clamp(4.5rem, 13vh, 8.5rem);
+    left: clamp(1.25rem, 6vw, 6.5rem);
+    max-width: min(38rem, calc(100vw - 2.5rem));
+    transition:
+      opacity 700ms var(--ease-out-expo),
+      translate 900ms var(--ease-out-expo),
+      filter 700ms var(--ease-out-expo);
+  }
+
+  /* Leaving the hill, the title lifts away like a page being turned back. */
+  .landing[data-shown='false'] {
+    opacity: 0;
+    translate: 0 -1.5rem;
+    filter: blur(6px);
+    pointer-events: none;
+  }
+
+  /* Unpainted sky behind the title: the painter left the paper bare here. */
+  .landing::before {
+    content: '';
+    position: absolute;
+    inset: -2.5rem -3rem -2rem -5rem;
+    z-index: -1;
+    background: radial-gradient(closest-side, var(--color-paper) 0%, color-mix(in srgb, var(--color-paper) 60%, transparent) 45%, transparent 100%);
+    filter: url(#deckle);
+    opacity: 0.62;
+  }
+
+  .landing-name {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.7rem, 7.2vw, 5.75rem);
+    line-height: 0.98;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+  }
+
+  .landing-title {
+    margin: 1.1rem 0 0;
+    font-size: clamp(1.1rem, 1.9vw, 1.4rem);
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .landing-motto {
+    margin: 0.4rem 0 0;
+    font-family: var(--font-hand);
+    font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+    line-height: 1.4;
+    color: var(--color-ink);
+    rotate: -0.8deg;
+    transform-origin: 0 50%;
+  }
+
+  .landing-status {
+    min-height: 1.5rem;
+    margin: 0.8rem 0 0;
+    font-family: var(--font-hand);
+    font-size: 1.05rem;
+    color: var(--color-ink-soft);
+  }
+
+  /* The way in: a hand-cut terracotta label. It sits a little crooked and straightens under the hand. */
+  .plaque {
+    position: relative;
+    isolation: isolate;
+    margin-top: 1.9rem;
+    padding: 0.8rem 1.9rem 0.9rem;
+    border: 0;
+    background: none;
+    color: #f8f1e0;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    line-height: 1.2;
+    rotate: -1.6deg;
+    transition:
+      rotate 420ms var(--ease-out-expo),
+      translate 420ms var(--ease-out-expo),
+      opacity 400ms;
+  }
+
+  .plaque::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 5px 9px 6px 10px;
+    background: #8e4127 var(--tooth);
+    box-shadow:
+      inset 0 0 0 2px rgb(248 241 224 / 0.22),
+      inset 0 -6px 12px -6px rgb(40 16 8 / 0.5);
+    filter: url(#deckle-fine) drop-shadow(0 2px 0 #5f2915) drop-shadow(0 12px 12px rgb(58 42 32 / 0.34));
+    transition: filter 420ms var(--ease-out-expo);
+  }
+
+  .plaque:hover:not(:disabled) {
+    rotate: 0deg;
+    translate: 0 -3px;
+  }
+
+  .plaque:active:not(:disabled) {
+    translate: 0 1px;
+    transition-duration: 90ms;
+  }
+
+  .plaque:disabled {
+    opacity: 0.55;
+  }
+
+  /* ------------------------------------------------------------ the trail (menu) */
+
+  .trail {
+    position: absolute;
+    left: 50%;
+    bottom: max(0.9rem, env(safe-area-inset-bottom));
+    z-index: 3;
+    translate: -50% 0;
+    padding: 0.35rem 0.9rem 0.3rem;
+    transition:
+      translate 700ms var(--ease-out-expo),
+      opacity 500ms;
+  }
+
+  .trail[data-shown='false'] {
+    translate: -50% 140%;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .trail-list {
+    display: flex;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .trail-stop {
+    display: grid;
+    justify-items: center;
+    min-width: 6.4rem;
+    min-height: 3.4rem;
+    padding: 0.35rem 0.8rem 0.55rem;
+    border: 0;
+    background: var(--squiggle) no-repeat 50% calc(100% - 0.12rem) / 0% 0.45rem;
+    color: var(--color-ink-soft);
+    line-height: 1.2;
+    transition:
+      background-size 420ms var(--ease-out-expo),
+      color 200ms,
+      translate 300ms var(--ease-out-expo);
+  }
+
+  .trail-stop:hover {
+    color: var(--color-ink);
+    translate: 0 -2px;
+  }
+
+  .trail-stop[aria-current='true'] {
+    color: var(--color-ink);
+    background-size: 78% 0.45rem;
+  }
+
+  .trail-name {
+    font-family: var(--font-display);
+    font-size: 1.06rem;
+    white-space: nowrap;
+  }
+
+  .trail-role {
+    font-family: var(--font-hand);
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  /* On a phone the trail is the app's menu: full width, pinned to the bottom, one plain word per stop. */
+  @media (max-width: 767px) {
+    .trail {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      translate: none;
+      padding: 0.3rem 0.4rem calc(0.3rem + env(safe-area-inset-bottom));
+    }
+
+    .trail[data-shown='false'] {
+      translate: 0 120%;
+    }
+
+    .trail.paper::before {
+      inset: 0 -0.5rem -1rem;
+    }
+
+    .trail-list {
+      gap: 0;
+    }
+
+    .trail-list > li {
+      flex: 1;
+    }
+
+    .trail-stop {
+      width: 100%;
+      min-width: 0;
+      min-height: 3.25rem;
+      padding-inline: 0.2rem;
+      align-content: center;
+    }
+
+    .trail-name {
+      display: none;
+    }
+
+    .trail-role {
+      font-size: 1.14rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .trail-short {
+      display: none;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .trail-long {
+      display: none;
+    }
+  }
+
+  /* ------------------------------------------------------------ tags pinned in the valley */
+
+  .tag-anchor {
+    pointer-events: none;
+  }
+
+  .tag {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    justify-items: center;
+    width: max-content;
+    max-width: 15rem;
+    padding: 0.3rem 0.8rem 0.4rem;
+    border: 0;
+    background: none;
+    color: #3a2a20;
+    font-family: var(--font-hand);
+    font-size: 1.08rem;
+    line-height: 1.25;
+    text-align: center;
+    opacity: 0;
+    translate: 0 0.5rem;
+    rotate: -2deg;
+    pointer-events: none;
+    transition:
+      opacity 260ms var(--ease-out-expo),
+      translate 420ms var(--ease-out-expo),
+      rotate 300ms var(--ease-out-expo);
+  }
+
+  .tag::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 3px 6px 4px 7px;
+    background: #f8f1e0 var(--tooth);
+    filter: url(#deckle-fine) drop-shadow(0 1px 0.5px rgb(58 42 32 / 0.3)) drop-shadow(0 5px 6px rgb(58 42 32 / 0.28));
+  }
+
+  .tag[data-shown='true'] {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .tag-note {
+    font-size: 0.92rem;
+    color: #6a5443;
+  }
+
+  .tag-list {
+    margin-top: 0.1rem;
+    font-size: 0.98rem;
+    color: #6a5443;
+    text-wrap: balance;
+  }
+
+  .waymark[data-shown='true'] {
+    pointer-events: auto;
+  }
+
+  .waymark:hover,
+  .waymark:focus-visible {
+    rotate: 1deg;
+    translate: 0 -3px;
+  }
+
+  /* ------------------------------------------------------------ panels */
+
+  /* On a wide screen a panel is laid beside the landmark; on a phone it is a sheet that slides up over the foot of the picture. */
+  .panel {
+    position: absolute;
+    top: 5.25rem;
+    right: clamp(1rem, 3vw, 2.75rem);
+    bottom: calc(var(--trail-height) + 2rem);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: min(30rem, 44vw);
+    opacity: 0;
+    translate: 3rem 0;
+    rotate: 1.4deg;
+    visibility: hidden;
+    transition:
+      opacity 420ms var(--ease-out-expo),
+      translate 700ms var(--ease-out-expo),
+      rotate 700ms var(--ease-out-expo),
+      visibility 0s 700ms;
+  }
+
+  /* Only the sheet itself takes the pointer; the empty space round it still belongs to the valley. */
+  .overlay > .panel {
+    pointer-events: none;
+  }
+
+  .overlay > .panel[data-open='true'] > * {
+    pointer-events: auto;
+  }
+
+  .panel[data-wide='true'] {
+    width: min(47rem, 54vw);
+  }
+
+  .panel[data-open='true'] {
+    opacity: 1;
+    translate: 0 0;
+    rotate: 0deg;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .panel-body {
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule) transparent;
+    /* Room for the sheet's shadow and ragged edge, which would otherwise be clipped by the scroller. */
+    margin: -1.25rem;
+    padding: 1.25rem;
+  }
+
+  .panel-close {
+    align-self: flex-end;
+    margin: 0 0.4rem -0.55rem 0;
+    z-index: 1;
+    font-family: var(--font-hand);
+    font-size: 1.02rem;
+    rotate: 2deg;
+    transition: rotate 300ms var(--ease-out-expo);
+  }
+
+  .panel-close:hover {
+    rotate: -1deg;
+  }
+
+  @media (max-width: 767px) {
+    .panel,
+    .panel[data-wide='true'] {
+      top: auto;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      max-height: min(66svh, 38rem);
+      padding-bottom: calc(var(--trail-height) + env(safe-area-inset-bottom));
+      translate: 0 104%;
+      rotate: 0deg;
+      opacity: 1;
+      justify-content: flex-end;
+    }
+
+    .panel[data-open='true'],
+    .panel[data-wide='true'][data-open='true'] {
+      translate: 0 0;
+    }
+
+    .panel-body {
+      margin: 0;
+      padding: 0.9rem 0.6rem 0.4rem;
+    }
+
+    .panel-close {
+      margin: 0 0.9rem -0.9rem 0;
+    }
+  }
+
+  .panel-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.6rem, 2.6vw, 2.05rem);
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+
+  .panel-lede {
+    margin: 0.5rem 0 0;
+    color: var(--color-ink-soft);
+    max-width: 34ch;
+  }
+
+  .sheet {
+    padding: 1.6rem 1.7rem 1.8rem;
+  }
+
+  @media (max-width: 767px) {
+    .sheet {
+      padding: 1.5rem 1.2rem 1.4rem;
+    }
+  }
+
+  .pen-link {
+    color: var(--color-dusk);
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.2em;
+    text-decoration-color: color-mix(in srgb, var(--color-dusk) 50%, transparent);
+    transition: text-decoration-color 200ms;
+  }
+
+  .pen-link:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /* ------------------------------------------------------------ the journal (about) */
+
+  /* A leather cover, worn pale at the corners, stitched round the edge, with the pages lying open on it. */
+  .journal {
+    position: relative;
+    padding: 0.8rem 0.85rem 0.95rem;
+    border-radius: 10px 14px 14px 10px;
+    background:
+      radial-gradient(120% 90% at 0% 0%, rgb(255 220 170 / 0.16), transparent 42%),
+      radial-gradient(90% 80% at 100% 100%, rgb(255 220 170 / 0.12), transparent 40%),
+      linear-gradient(170deg, var(--color-leather), var(--color-leather-deep)) var(--tooth);
+    background-blend-mode: normal, normal, multiply;
+    box-shadow:
+      inset 0 0 0 1px rgb(255 235 200 / 0.08),
+      inset 0 -10px 18px -10px rgb(0 0 0 / 0.55),
+      0 2px 0 var(--color-leather-deep),
+      0 22px 30px -14px rgb(40 22 12 / 0.6);
+  }
+
+  .journal::before {
+    content: '';
+    position: absolute;
+    inset: 0.32rem;
+    border: 1.5px dashed rgb(240 214 170 / 0.34);
+    border-radius: 7px 10px 10px 7px;
+    pointer-events: none;
+  }
+
+  /* The ribbon marking the place. */
+  .journal::after {
+    content: '';
+    position: absolute;
+    top: -0.3rem;
+    right: 2.6rem;
+    width: 0.8rem;
+    height: 3.4rem;
+    background: linear-gradient(90deg, #a7502f, #c2643f 45%, #9b4b31);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+    filter: drop-shadow(0 3px 2px rgb(40 22 12 / 0.4));
+  }
+
+  .journal-pages {
+    container-type: inline-size;
+    position: relative;
+    border-radius: 3px 5px 5px 3px;
+    background: var(--color-canvas) var(--tooth);
+    box-shadow:
+      inset 0 0 26px -6px color-mix(in srgb, var(--color-leather) 34%, transparent),
+      0 1px 0 var(--color-rule),
+      0 3px 0 -1px var(--color-canvas),
+      0 4px 0 -1px var(--color-rule);
+  }
+
+  .journal-spread {
+    display: grid;
+  }
+
+  .page {
+    padding: 1.5rem 1.5rem 1.7rem;
+  }
+
+  .page + .page {
+    border-top: 1px dashed var(--color-rule);
+  }
+
+  /* With room for it the journal lies open as a spread, with the shadow of the gutter down the middle. */
+  @container (min-width: 37rem) {
+    .journal-spread {
+      grid-template-columns: 1fr 1fr;
+      background: linear-gradient(90deg, transparent 47.5%, color-mix(in srgb, var(--color-leather) 22%, transparent) 50%, transparent 52.5%);
+    }
+
+    .page + .page {
+      border-top: 0;
+    }
+  }
+
+  .page h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.75rem;
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+
+  .page h3 {
+    margin: 1.7rem 0 0.35rem;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.14rem;
+    line-height: 1.25;
+    color: var(--color-rust);
+  }
+
+  .page p {
+    margin: 0.55rem 0 0;
+    max-width: 62ch;
+  }
+
+  .page-quote {
+    margin: 0.7rem 0 0;
+    font-family: var(--font-hand);
+    font-size: 1.5rem;
+    line-height: 1.28;
+    color: var(--color-ink);
+    rotate: -1.2deg;
+    text-wrap: balance;
+  }
+
+  .page-margin {
+    font-family: var(--font-hand);
+    font-size: 1.04rem;
+    color: var(--color-ink-soft);
+  }
+
+  .trail-log {
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .trail-log li {
+    display: grid;
+    grid-template-columns: 3.4rem 1fr;
+    gap: 0.5rem;
+    padding: 0.38rem 0;
+    line-height: 1.45;
+  }
+
+  .trail-log li + li {
+    border-top: 1px dashed var(--color-rule);
+  }
+
+  .trail-log time {
+    font-family: var(--font-hand);
+    font-size: 1.08rem;
+    color: var(--color-rust);
+  }
+
+  /* ------------------------------------------------------------ the ticket rack (projects) */
+
+  .tickets {
+    display: grid;
+    gap: 0.75rem;
+    margin: 1.2rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A railway ticket: a coloured stub, a row of punched holes, and the journey printed beside it. */
+  .ticket {
+    position: relative;
+    display: grid;
+    grid-template-columns: 4.4rem 1fr;
+    width: 100%;
+    min-height: 4.6rem;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--color-oat) 62%, var(--color-canvas)) var(--tooth);
+    color: var(--color-ink);
+    text-align: left;
+    box-shadow: var(--shadow-rest);
+    transition:
+      translate 320ms var(--ease-out-expo),
+      rotate 320ms var(--ease-out-expo),
+      box-shadow 320ms var(--ease-out-expo);
+  }
+
+  .ticket:nth-child(odd) {
+    rotate: -0.5deg;
+  }
+
+  .ticket:hover:not(:disabled),
+  .ticket:focus-visible {
+    translate: 0.5rem -2px;
+    rotate: 0.4deg;
+  }
+
+  .ticket-stub {
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    border-radius: 6px 0 0 6px;
+    background: var(--livery, var(--color-terracotta));
+    color: #2b1d15;
+    line-height: 1.1;
+    /* The punched holes between stub and ticket. */
+    mask: radial-gradient(circle at 100% 0.55rem, transparent 0.24rem, #000 0.26rem) 0 0 / 100% 1.1rem;
+  }
+
+  .ticket-stub b {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.7rem;
+  }
+
+  .ticket-stub span {
+    font-family: var(--font-hand);
+    font-size: 0.95rem;
+  }
+
+  .ticket-face {
+    display: grid;
+    align-content: center;
+    gap: 0.1rem;
+    padding: 0.7rem 1rem 0.8rem 0.9rem;
+  }
+
+  .ticket-name {
+    font-family: var(--font-display);
+    font-size: 1.22rem;
+    line-height: 1.2;
+  }
+
+  .ticket-kind {
+    font-family: var(--font-hand);
+    font-size: 1rem;
+    color: var(--color-ink-soft);
+  }
+
+  .ticket[data-waiting='true'] .ticket-face > * {
+    width: 62%;
+    height: 0.85rem;
+    border-radius: 3px;
+    background: var(--color-rule);
+    animation: waiting 1.6s ease-in-out infinite;
+  }
+
+  .ticket[data-waiting='true'] .ticket-face > :last-child {
+    width: 38%;
+  }
+
+  @keyframes waiting {
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  /* ------------------------------------------------------------ the docket (one project) */
+
+  .docket {
+    width: min(42rem, calc(100vw - 1.5rem));
+    max-height: min(46rem, calc(100svh - 2rem));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-ink);
+    overflow: visible;
+  }
+
+  .docket::backdrop {
+    background: color-mix(in srgb, var(--color-leather-deep) 46%, transparent);
+    backdrop-filter: blur(3px) saturate(0.8);
+  }
+
+  .docket[open] {
+    animation: docket-in 620ms var(--ease-out-expo);
+  }
+
+  .docket[open]::backdrop {
+    animation: fade-in 400ms ease-out;
+  }
+
+  @keyframes docket-in {
+    from {
+      opacity: 0;
+      translate: 0 2.5rem;
+      rotate: -2.5deg;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Parchment: tanned toward the edges, the way a sheet ages from the outside in. */
+  .parchment {
+    position: relative;
+    isolation: isolate;
+    max-height: inherit;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule) transparent;
+    padding: clamp(1.5rem, 4vw, 2.6rem) clamp(1.3rem, 4vw, 2.7rem) clamp(1.4rem, 3vw, 2.2rem);
+    rotate: -0.4deg;
+    border-radius: 4px 7px 5px 8px;
+    background:
+      radial-gradient(130% 110% at 50% 45%, transparent 55%, color-mix(in srgb, #a9763f 34%, transparent) 100%),
+      color-mix(in srgb, var(--color-oat) 55%, var(--color-canvas)) var(--tooth);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-leather) 22%, transparent),
+      0 2px 1px rgb(40 22 12 / 0.3),
+      0 30px 50px -18px rgb(30 16 8 / 0.7);
+  }
+
+  .docket-title {
+    margin: 0;
+    max-width: 16ch;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.9rem, 5vw, 2.7rem);
+    line-height: 1.04;
+    text-wrap: balance;
+  }
+
+  .docket-summary {
+    margin: 0.9rem 0 0;
+    max-width: 56ch;
+  }
+
+  /* The rubber stamp in the corner. */
+  .stamp {
+    position: absolute;
+    top: 1.4rem;
+    right: 1.5rem;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    width: 5.3rem;
+    height: 5.3rem;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    outline: 1px solid currentColor;
+    outline-offset: -6px;
+    color: var(--color-rust);
+    font-family: var(--font-display);
+    line-height: 1;
+    rotate: 11deg;
+    opacity: 0.82;
+    mask: var(--tooth) center / 90px, linear-gradient(#000, #000);
+    mask-composite: exclude;
+  }
+
+  .stamp b {
+    font-weight: 400;
+    font-size: 1.9rem;
+  }
+
+  .stamp span {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .placeholder-note {
+    display: inline-block;
+    margin: 1rem 0 0;
+    padding: 0.2rem 0.7rem 0.25rem;
+    border: 1.5px dashed var(--color-rust);
+    border-radius: 3px;
+    color: var(--color-rust);
+    font-family: var(--font-hand);
+    font-size: 1.05rem;
+    line-height: 1.35;
+    rotate: -1deg;
+  }
+
+  .specs {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0 1.4rem;
+    margin: 1.5rem 0 0;
+  }
+
+  .specs dt,
+  .specs dd {
+    margin: 0;
+    padding: 0.5rem 0;
+    border-top: 1px dashed color-mix(in srgb, var(--color-leather) 42%, transparent);
+  }
+
+  .specs dt {
+    font-family: var(--font-hand);
+    font-size: 1.06rem;
+    color: var(--color-ink-soft);
+  }
+
+  .docket-notes {
+    margin: 1.3rem 0 0;
+    padding-left: 1.3rem;
+    list-style: '–  ';
+  }
+
+  .docket-notes li {
+    padding: 0.14rem 0;
+  }
+
+  .docket-notes li::marker {
+    color: var(--color-rust);
+  }
+
+  .docket-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem 0.9rem;
+    margin-top: 1.7rem;
+  }
+
+  /* An inked button: outline drawn with a pen, filling in when pressed toward. */
+  .inked {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.35rem 1.15rem 0.45rem;
+    border: 1.6px solid var(--color-ink);
+    border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+    background: transparent;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 1.04rem;
+    line-height: 1.2;
+    text-decoration: none;
+    transition:
+      background-color 220ms,
+      color 220ms,
+      translate 300ms var(--ease-out-expo),
+      border-radius 500ms var(--ease-out-expo);
+  }
+
+  .inked:hover:not(:disabled, [aria-disabled='true']) {
+    background: var(--color-ink);
+    color: var(--color-canvas);
+    translate: 0 -2px;
+    border-radius: 18px 225px 18px 255px / 255px 18px 225px 18px;
+  }
+
+  .inked[data-tone='rust'] {
+    border-color: #8e4127;
+    background: #8e4127;
+    color: #f8f1e0;
+  }
+
+  .inked[data-tone='rust']:hover:not(:disabled) {
+    background: #6f3019;
+    color: #f8f1e0;
+  }
+
+  .inked[aria-disabled='true'],
+  .inked:disabled {
+    border-style: dashed;
+    color: var(--color-ink-soft);
+    border-color: var(--color-ink-soft);
+    cursor: default;
+  }
+
+  .quiet {
+    border: 0;
+    background: none;
+    color: var(--color-ink-soft);
+    font-family: var(--font-hand);
+    font-size: 1.06rem;
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    min-height: 2.75rem;
+    padding: 0 0.4rem;
+  }
+
+  .quiet:hover {
+    color: var(--color-ink);
+  }
+
+  /* ------------------------------------------------------------ field notes (skills) */
+
+  .mills {
+    margin: 1.1rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .mill {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr;
+    gap: 0.1rem 0.75rem;
+    width: 100%;
+    padding: 0.7rem 0.5rem 0.75rem 0.3rem;
+    border: 0;
+    border-top: 1px dashed var(--color-rule);
+    background: none;
+    color: var(--color-ink);
+    text-align: left;
+    transition:
+      translate 320ms var(--ease-out-expo),
+      background-color 200ms;
+  }
+
+  .mills li:first-child .mill {
+    border-top: 0;
+  }
+
+  .mill:hover,
+  .mill:focus-visible,
+  .mill[data-hot='true'] {
+    translate: 0.4rem 0;
+  }
+
+  /* A dab of the colour the mill's cap is painted in, turning like a sail when the mill is picked. */
+  .mill-dab {
+    grid-row: span 2;
+    align-self: start;
+    width: 1.3rem;
+    height: 1.3rem;
+    margin-top: 0.25rem;
+    border-radius: 58% 42% 55% 45% / 45% 58% 42% 55%;
+    background: var(--dab);
+    box-shadow: inset -2px -3px 0 rgb(40 22 12 / 0.18);
+    transition: rotate 900ms var(--ease-out-expo);
+  }
+
+  .mill:hover .mill-dab,
+  .mill:focus-visible .mill-dab,
+  .mill[data-hot='true'] .mill-dab {
+    rotate: 200deg;
+  }
+
+  .mill-name {
+    font-family: var(--font-display);
+    font-size: 1.24rem;
+    line-height: 1.2;
+  }
+
+  .mill-skills {
+    font-family: var(--font-hand);
+    font-size: 1.1rem;
+    line-height: 1.4;
+    color: var(--color-ink-soft);
+  }
+
+  /* ------------------------------------------------------------ the letter (contact) */
+
+  .letter {
+    padding: 1.6rem 1.7rem 1.5rem;
+  }
+
+  .letter-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  /* A postage stamp, perforated on all four sides. */
+  .postage {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 3.6rem;
+    height: 4.3rem;
+    padding: 0.4rem;
+    background: var(--color-canvas);
+    rotate: 4deg;
+    mask:
+      radial-gradient(circle, transparent 0.16rem, #000 0.18rem) -0.3rem -0.3rem / 0.6rem 0.6rem,
+      linear-gradient(#000, #000) center / calc(100% - 0.5rem) calc(100% - 0.5rem) no-repeat;
+    filter: drop-shadow(0 2px 2px rgb(58 42 32 / 0.3));
+  }
+
+  .postage svg {
+    width: 100%;
+    height: 100%;
+    background: var(--color-cornflower);
+  }
+
+  .field {
+    display: grid;
+    gap: 0.15rem;
+    margin-top: 0.9rem;
+  }
+
+  .field label {
+    font-family: var(--font-hand);
+    font-size: 1.08rem;
+    color: var(--color-ink-soft);
+  }
+
+  /* Fields are written straight onto the letter's ruled lines; there are no boxes. */
+  .field input,
+  .field textarea {
+    width: 100%;
+    padding: 0.2rem 0.1rem 0.25rem;
+    border: 0;
+    border-bottom: 1.5px solid var(--color-rule);
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-ink);
+    font: inherit;
+    font-size: 1.06rem;
+    transition: border-color 200ms;
+  }
+
+  .field textarea {
+    min-height: 7.6rem;
+    resize: vertical;
+    line-height: 1.9rem;
+    border-bottom: 0;
+    background: repeating-linear-gradient(transparent 0 calc(1.9rem - 1.5px), var(--color-rule) calc(1.9rem - 1.5px) 1.9rem) local;
+  }
+
+  .field input::placeholder,
+  .field textarea::placeholder {
+    color: var(--color-ink-soft);
+    opacity: 0.75;
+  }
+
+  .field input:hover,
+  .field input:focus {
+    border-color: var(--color-ink);
+  }
+
+  .field :focus-visible {
+    outline-offset: 5px;
+  }
+
+  .field [aria-invalid='true'] {
+    border-color: var(--color-rust);
+  }
+
+  .field-error {
+    font-family: var(--font-hand);
+    font-size: 1.02rem;
+    color: var(--color-rust);
+  }
+
+  .letter-note {
+    margin: 0.9rem 0 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--color-ink-soft);
+  }
+
+  .charms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.55rem;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A wooden charm: the same ones that hang under the postbox. */
+  .charm {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.2rem 0.95rem 0.3rem;
+    border-radius: 5px 8px 6px 9px;
+    background: linear-gradient(172deg, #cba77c, #b3855c) var(--tooth);
+    box-shadow:
+      inset 0 0 0 1px rgb(60 36 20 / 0.35),
+      inset 0 -5px 6px -4px rgb(60 36 20 / 0.5),
+      0 5px 6px -3px rgb(58 42 32 / 0.4);
+    color: #2f2018;
+    font-family: var(--font-hand);
+    font-size: 1.1rem;
+    text-decoration: none;
+    transform-origin: 50% -0.6rem;
+    transition: rotate 600ms var(--ease-out-expo);
+  }
+
+  .charms li:nth-child(odd) .charm {
+    rotate: -2deg;
+  }
+
+  .charms li:nth-child(even) .charm {
+    rotate: 1.5deg;
+  }
+
+  .charms li .charm:hover,
+  .charms li .charm:focus-visible {
+    rotate: 5deg;
+  }
+
+  /* ------------------------------------------------------------ the sprout (loading) */
+
+  .sprout {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: end center;
+    padding-bottom: clamp(5rem, 20vh, 11rem);
+    pointer-events: none;
+    transition:
+      opacity 900ms ease-out 250ms,
+      filter 900ms ease-out 250ms;
+  }
+
+  .sprout[data-leaving='true'] {
+    opacity: 0;
+    filter: blur(8px);
+  }
+
+  .sprout-figure {
+    display: grid;
+    justify-items: center;
+    gap: 0.2rem;
+  }
+
+  .sprout svg {
+    width: clamp(8rem, 22vw, 11rem);
+    height: auto;
+    overflow: visible;
+  }
+
+  .sprout-stem {
+    stroke-dasharray: 1;
+    stroke-dashoffset: calc(1 - var(--grown));
+    transition: stroke-dashoffset 900ms var(--ease-out-expo);
+  }
+
+  .sprout-leaf {
+    transform-box: fill-box;
+    scale: var(--leaf, 0);
+    transition: scale 1100ms var(--ease-out-expo);
+  }
+
+  .sprout-sway {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: sway 3.4s ease-in-out infinite;
+  }
+
+  @keyframes sway {
+    0%,
+    100% {
+      rotate: -2.2deg;
+    }
+    50% {
+      rotate: 2.6deg;
+    }
+  }
+
+  .sprout-note {
+    font-family: var(--font-hand);
+    font-size: 1.1rem;
+    color: var(--color-ink-soft);
+  }
+
+  /* ------------------------------------------------------------ when the valley cannot be painted */
+
+  .unpainted {
+    position: absolute;
+    inset: auto 0 calc(var(--trail-height) + 2.5rem);
+    display: grid;
+    justify-items: center;
+    gap: 0.4rem;
+    padding: 0 1.5rem;
+    text-align: center;
+    color: var(--color-ink-soft);
+  }
+}
+
+/* People who ask for less motion get the same places with the travelling taken out. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
+  }
+}

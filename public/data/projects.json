@@ -1,0 +1,41 @@
+[
+  {
+    "id": "car-1",
+    "placeholder": true,
+    "title": "First project",
+    "kind": "Waiting for its freight",
+    "year": "To be filled in",
+    "role": "To be filled in",
+    "stack": ["To be filled in"],
+    "summary": "This car is empty for now. Otis will load it with a real project: what it is, who it was made for, and what Otis built.",
+    "notes": ["What the project had to do", "The hardest part, and how it was solved", "What to do differently next time"],
+    "repo": null,
+    "live": null
+  },
+  {
+    "id": "car-2",
+    "placeholder": true,
+    "title": "Second project",
+    "kind": "Waiting for its freight",
+    "year": "To be filled in",
+    "role": "To be filled in",
+    "stack": ["To be filled in"],
+    "summary": "This car is empty for now. Otis will load it with a real project: what it is, who it was made for, and what Otis built.",
+    "notes": ["What the project had to do", "The hardest part, and how it was solved", "What to do differently next time"],
+    "repo": null,
+    "live": null
+  },
+  {
+    "id": "car-3",
+    "placeholder": true,
+    "title": "Third project",
+    "kind": "Waiting for its freight",
+    "year": "To be filled in",
+    "role": "To be filled in",
+    "stack": ["To be filled in"],
+    "summary": "This car is empty for now. Otis will load it with a real project: what it is, who it was made for, and what Otis built.",
+    "notes": ["What the project had to do", "The hardest part, and how it was solved", "What to do differently next time"],
+    "repo": null,
+    "live": null
+  }
+]
