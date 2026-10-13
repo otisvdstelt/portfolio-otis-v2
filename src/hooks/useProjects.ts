@@ -1,4 +1,5 @@
 import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 
 /** One seat in the train. The file is public/data/projects.json: one entry per bench, in order along the car. */
 export interface Seat {
@@ -113,3 +114,53 @@ export const repositoryQuery = (repo: string) =>
   })
 
 export const useRepository = (repo: string | undefined) => useQuery({ ...repositoryQuery(repo ?? ''), enabled: Boolean(repo) })
+
+/** Everything written inside one project's book, as plain words: the scene sets them on its pages, the page reads them out. */
+export interface Leaves {
+  /** "Volume II" */
+  volume: string
+  title: string
+  kind: string
+  summary: string
+  stack: string
+  /** What GitHub says about the repository: its figures, or a line saying why there are none (yet). */
+  figures: { languages: readonly { name: string; share: number }[]; rows: readonly (readonly [label: string, value: string])[] } | { waiting: true } | { trouble: string }
+  /** Where it runs, if anywhere, and where its source is. */
+  live: string | null
+  source: string
+}
+
+export const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI']
+const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+/** A date as it would be written by hand: 12 October 2026. */
+export const written = (iso: string) => day.format(new Date(iso))
+
+/**
+ * The words for one book, with GitHub's figures as they stand: asked for
+ * when the book is chosen, and kept by the query cache after that.
+ */
+export function useLeaves(seat: Seat | undefined, index: number | null): { leaves: Leaves | null; ask: () => void } {
+  const { data, error, refetch } = useRepository(seat?.repo)
+  const leaves = useMemo<Leaves | null>(() => {
+    if (!seat || index === null) return null
+    const figures: Leaves['figures'] = data
+      ? {
+          languages: data.languages,
+          rows: [['Last worked on', written(data.pushedAt)], ['Started', written(data.createdAt)], ['Stars', String(data.stars)], ['Forks', String(data.forks)], ['Open issues', String(data.openIssues)], ...(data.licence ? [['Licence', data.licence] as const] : [])],
+        }
+      : error
+        ? { trouble: error instanceof Refused ? error.message : 'GitHub could not be reached. Check your connection.' }
+        : { waiting: true }
+    return {
+      volume: `Volume ${NUMERALS[index] ?? index + 1}`,
+      title: seat.title,
+      kind: seat.kind,
+      summary: seat.summary || data?.description || 'No description has been written for this one yet.',
+      stack: seat.stack.join(', '),
+      figures,
+      live: data?.homepage ?? null,
+      source: data?.url ?? `https://github.com/${seat.repo}`,
+    }
+  }, [seat, index, data, error])
+  return { leaves, ask: () => void refetch() }
+}

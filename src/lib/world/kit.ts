@@ -1,7 +1,7 @@
 // A small modelling kit: painted primitives that are stacked, leaned and
 // merged into everything that stands in the world. All of it is built from
 // simple solids, coloured per vertex, so one cel-shaded material paints it all.
-import { BoxGeometry, BufferAttribute, Color, CylinderGeometry, Euler, ExtrudeGeometry, IcosahedronGeometry, Matrix4, Quaternion, Shape, TorusGeometry, Vector2, Vector3, type BufferGeometry } from 'three'
+import { BoxGeometry, BufferAttribute, Color, CylinderGeometry, Euler, ExtrudeGeometry, IcosahedronGeometry, Matrix4, Path, Quaternion, Shape, TorusGeometry, Vector2, Vector3, type BufferGeometry } from 'three'
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { valueNoise } from './terrain.ts'
 
@@ -89,10 +89,14 @@ export function slab(x0: number, x1: number, y0: number, y1: number, z0: number,
   return box(Math.abs(x1 - x0), Math.abs(y1 - y0), Math.abs(z1 - z0), colour, { at: [(x0 + x1) / 2, Math.min(y0, y1), (z0 + z1) / 2] })
 }
 
-/** A flat outline pushed through a thickness: gables, awnings, book covers. Drawn in x and y, centred on z. */
-export function extrude(outline: readonly (readonly [number, number])[], depth: number, colour: Tint, place?: Place): BufferGeometry {
+/**
+ * A flat outline pushed through a thickness: gables, arches, a wall with a round window in it.
+ * Drawn in x and y, centred on z. `hole` cuts a circle out of it: [x, y, radius].
+ */
+export function extrude(outline: readonly (readonly [number, number])[], depth: number, colour: Tint, place?: Place, hole?: readonly [number, number, number]): BufferGeometry {
   const shape = new Shape(outline.map(([x, y]) => new Vector2(x, y)))
-  const raw = new ExtrudeGeometry(shape, { depth, bevelEnabled: false }).translate(0, 0, -depth / 2)
+  if (hole) shape.holes.push(new Path().absarc(hole[0], hole[1], hole[2], 0, Math.PI * 2, true))
+  const raw = new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 20 }).translate(0, 0, -depth / 2)
   raw.deleteAttribute('uv')
   return put(tint(mergeVertices(raw, 1e-4), colour), place)
 }

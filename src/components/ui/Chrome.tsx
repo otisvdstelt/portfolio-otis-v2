@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react'
 import { OWNER } from '../../content/site'
 import type { Weather } from '../../lib/air'
-import { PLACES, TRAIL, type PlaceId } from '../../lib/places'
+import { PLACES, ROUTE, type PlaceId } from '../../lib/places'
 
 /**
  * The filters that make paper look torn and paint look wet. Defined once;
@@ -96,14 +97,15 @@ interface TrailProps {
 }
 
 /**
- * The trail: every scene by name, on a strip of paper along the bottom. On a
- * desktop it is the timetable; on a phone it is the menu.
+ * The route map: the train and its four stops, by name, along one drawn
+ * line. On a desktop it lies along the foot of the picture; on a phone it is
+ * the menu, pinned to the bottom of the screen.
  */
 export function Trail({ place, shown, onVisit }: TrailProps) {
   return (
-    <nav className="trail paper" data-shown={shown} inert={!shown} aria-label="Stops along the line">
+    <nav className="trail paper" data-shown={shown} inert={!shown} aria-label="Route map">
       <ul className="trail-list">
-        {TRAIL.map((id) => (
+        {ROUTE.map((id) => (
           <li key={id}>
             <button type="button" className="trail-stop" aria-current={place === id ? 'true' : undefined} onClick={() => onVisit(id)}>
               <span className="trail-name">{PLACES[id].name}</span>
@@ -114,5 +116,55 @@ export function Trail({ place, shown, onVisit }: TrailProps) {
         ))}
       </ul>
     </nav>
+  )
+}
+
+/** One thing that can be done in a scene, written out. */
+export interface Prompt {
+  label: string
+  note?: string
+  /** Lit because the thing itself is under the pointer. */
+  hot?: boolean
+  onPress: () => void
+  /** Pointing at the words is pointing at the thing. */
+  onPoint?: (over: boolean) => void
+}
+
+interface PromptsProps {
+  shown: boolean
+  /** A line of introduction in the visitor's margin: "Face out on the ledge". */
+  title: string
+  prompts: readonly Prompt[]
+}
+
+/**
+ * What a scene offers, as plain words on a scrap of paper beside it. The
+ * things themselves can be pressed in the picture; this says so, and gives
+ * the keyboard the same reach as the pointer.
+ */
+export function Prompts({ shown, title, prompts }: PromptsProps) {
+  return (
+    <nav className="prompts paper" data-shown={shown} inert={!shown} aria-label="In this scene">
+      <p className="prompts-title">{title}</p>
+      <ul className="prompts-list">
+        {prompts.map(({ label, note, hot, onPress, onPoint }) => (
+          <li key={label}>
+            <button type="button" className="prompt" data-hot={hot} onClick={onPress} onPointerEnter={() => onPoint?.(true)} onPointerLeave={() => onPoint?.(false)} onFocus={() => onPoint?.(true)} onBlur={() => onPoint?.(false)}>
+              <span>{label}</span>
+              {note && <span className="prompt-note">{note}</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+/** A line of guidance on a slip of paper, for the moment someone first stands in the train. */
+export function Hint({ shown, children }: { shown: boolean; children: ReactNode }) {
+  return (
+    <p className="hint slip paper" data-shown={shown} aria-hidden={!shown}>
+      {children}
+    </p>
   )
 }

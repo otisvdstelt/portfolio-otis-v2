@@ -20,6 +20,8 @@ const seaShader = {
     uSun: { value: SUN_DIRECTION },
     uDensity: { value: 0.0056 },
     uShift: { value: 0 },
+    uMirror: { value: 0.78 },
+    uShallow: { value: 0 },
     uTime: air.time,
     uRain: air.rain,
     uNight: air.night,
@@ -42,6 +44,8 @@ const seaShader = {
     uniform vec3 uSun;
     uniform float uDensity;
     uniform float uShift;
+    uniform float uMirror;
+    uniform float uShallow;
     uniform float uTime;
     uniform float uRain;
     uniform float uNight;
@@ -64,7 +68,10 @@ const seaShader = {
       // Looking straight down you see water; along the surface you see the sky upside down, a shade deeper.
       vec3 toEye = normalize(cameraPosition - vWorld);
       float glance = pow(1.0 - max(toEye.y, 0.0), 2.4);
-      vec3 colour = mix(uTint, reflection * 0.93, 0.6 + 0.38 * glance);
+      // Where the sea is shallow and clear it keeps its own colour underfoot, and a net of light moves on the bottom.
+      float net = 1.0 - smoothstep(0.0, 0.1, abs(sin(w.x * 0.9 + sin(w.y * 0.7 + uTime * 0.6) * 1.4) * sin(w.y * 0.8 + sin(w.x * 0.6 - uTime * 0.5) * 1.4)));
+      vec3 body = uTint * (1.0 + 0.22 * uShallow * (1.0 - glance)) + net * 0.2 * uShallow * (1.0 - glance) * (1.0 - smoothstep(20.0, 70.0, reach));
+      vec3 colour = mix(body, reflection * 0.93, clamp(uMirror * 0.78 + (1.0 - uMirror * 0.78) * glance * (0.55 + 0.45 * uMirror), 0.0, 0.98));
 
       // The sun's road across the water: broken dashes of light toward where it stands.
       vec3 bounced = reflect(-toEye, vec3(0.0, 1.0, 0.0));
@@ -81,7 +88,7 @@ const seaShader = {
 }
 
 /**
- * The sea: endless, perfectly flat, and a real mirror. The world is drawn a
+ * The sea: endless, perfectly flat, and a real mirror (how much of one is up to the scene: the library stands in shallow water you can see into). The world is drawn a
  * second time from under the surface into a texture, and the water shows that
  * picture with long horizontal strokes dragged through it. The sheet of
  * water follows the camera, so there is always more of it.
@@ -117,6 +124,8 @@ export function Sea({ resolution }: { resolution: number }) {
     uniforms.uSun.value = SUN_DIRECTION
     uniforms.uDensity.value = state.scene.fog && 'density' in state.scene.fog ? state.scene.fog.density : 0.0056
     uniforms.uShift.value = train.travel - train.x
+    uniforms.uMirror.value = look.mirror
+    uniforms.uShallow.value = look.shallow
     mirror.position.x = state.camera.position.x
     mirror.position.z = state.camera.position.z
   })

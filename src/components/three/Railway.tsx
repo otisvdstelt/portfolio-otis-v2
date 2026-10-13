@@ -1,10 +1,10 @@
 import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import displayFace from '@fontsource/zen-antique-soft/files/zen-antique-soft-latin-400-normal.woff?url'
-import { Suspense, useRef } from 'react'
+import { Suspense, useRef, type ReactNode } from 'react'
 import { MathUtils, type Group, type PointLight } from 'three'
 import { air } from '../../lib/air'
-import type { Hot, PlaceId } from '../../lib/places'
+import { DESTINATIONS, PLACES, type Hot, type PlaceId } from '../../lib/places'
 import { runTrain, train } from '../../lib/train'
 import { CAR, HALT } from '../../lib/world/spec'
 import { CRUISE } from '../../lib/world/terrain'
@@ -13,56 +13,57 @@ import { dry, glass, glow, paintedToon } from './materials'
 import { Piece, Tag } from './Piece'
 import { pressable } from './press'
 
-// Telegraph posts stand along the north side of the line; the two kinds of rock repeat a lap apart.
+// Telegraph posts stand along the north side of the line, a whole number of them to a lap. Nothing else breaks the sea.
 const POSTS = Array.from({ length: 12 }, (_, i) => (i - 5) * CRUISE.postEvery).filter((x) => x <= 240)
 const LAP = CRUISE.to - CRUISE.from
-type Rock = readonly [x: number, z: number, size: number, turn: number]
-const ROCKS: readonly Rock[] = [...[-170, -50, 70, 190].map((x): Rock => [x, -58, 1.15, 0.4]), ...[-70, 50, 170, 290].map((x): Rock => [x, 19, 0.62, 2.6])]
 if (LAP % CRUISE.postEvery !== 0) throw new Error('the posts must stand a whole number of laps apart')
 
 /** A railcar's paint. Under its own roof (the floor, the benches, the inside of the walls) it stays dry in the rain. */
 const carPaint = paintedToon({ shelter: CAR.ceiling + 0.2 })
 
-interface CarProps {
-  offset: number
-  /** The middle car is the one the visitor rides in: its benches are the projects. */
-  slots?: { names: readonly string[]; hot: Hot | null; labelled: boolean; onHot: (hot: Hot | null) => void; onProject: (index: number) => void }
-  onBoard: () => void
+interface Seats {
+  hot: Hot | null
+  /** The visitor is in the car, so its benches answer to the pointer. */
+  live: boolean
+  onHot: (hot: Hot | null) => void
+  onVisit: (place: PlaceId) => void
 }
 
-function Bench({ index, x, slot }: { index: number; x: number; slot: NonNullable<CarProps['slots']> }) {
+/** One bench of the middle car. Each is the way to a destination: choose it and you are walked to the seat across from it. */
+function Bench({ index, x, seats }: { index: number; x: number; seats: Seats }) {
   const lift = useRef<Group>(null)
-  const isHot = slot.hot?.kind === 'bench' && slot.hot.index === index
+  const destination = DESTINATIONS[index]
+  const isHot = seats.hot?.kind === 'seat' && seats.hot.index === index
   // A chosen bench rises a hand's breadth off the floor, as if the car had gone over a join in the rails.
   useFrame((_, delta) => {
     if (lift.current) lift.current.position.y = MathUtils.damp(lift.current.position.y, isHot ? 0.07 : 0, 10, delta)
   })
   const press = pressable(
-    () => slot.onProject(index),
-    (over) => slot.onHot(over ? { kind: 'bench', index } : null),
+    () => seats.onVisit(destination),
+    (over) => seats.onHot(over ? { kind: 'seat', index } : null),
   )
   return (
     <group position={[x, 0, CAR.benchZ]}>
       <group ref={lift}>
-        <Piece name="Car_Bench" material={dry} hung line={0.014} {...press} />
+        <Piece name="Car_Bench" material={dry} hung line={0.014} {...(seats.live ? press : {})} />
       </group>
-      <Tag position={CAR.tag} shown={slot.labelled || isHot}>
-        <span className="tag-note">seat {index + 1}</span>
-        {slot.names[index]}
+      <Tag position={CAR.tag} shown={seats.live && isHot}>
+        {PLACES[destination].name}
+        <span className="tag-note">{PLACES[destination].role}</span>
       </Tag>
     </group>
   )
 }
 
-function Car({ offset, slots, onBoard }: CarProps) {
-  const board = pressable(onBoard)
+/** One car. `fitting`, when given, stands where the north benches would be. */
+function Car({ offset, seats, onBoard, fitting }: { offset: number; seats?: Seats; onBoard?: () => void; fitting?: ReactNode }) {
   return (
     <group position={[offset, 0, 0]}>
-      {/* From outside, any car is the way aboard; inside the middle one, the benches take the clicks. */}
-      <Piece name="Car_Body" material={carPaint} line={0.03} {...board} />
+      {/* From the platform, any car is the way aboard. */}
+      <Piece name="Car_Body" material={carPaint} line={0.03} {...(onBoard ? pressable(onBoard) : {})} />
       <Piece name="Car_Glass" material={glass} line={0} castShadow={false} />
       <Piece name="Car_Glow" material={glow} line={0} castShadow={false} />
-      {CAR.benches.map((x, index) => (slots && index < slots.names.length ? <Bench key={x} index={index} x={x} slot={slots} /> : <Piece key={x} name="Car_Bench" material={dry} hung line={0.014} position={[x, 0, CAR.benchZ]} />))}
+      {fitting ?? CAR.benches.map((x, index) => (seats ? <Bench key={x} index={index} x={x} seats={seats} /> : <Piece key={x} name="Car_Bench" material={dry} hung line={0.014} position={[x, 0, CAR.benchZ]} />))}
     </group>
   )
 }
@@ -71,18 +72,19 @@ export interface RailwayProps {
   place: PlaceId
   /** Devices shown fixed views do not move the train at all. */
   still: boolean
-  /** Pin a ticket over each bench while the visitor is aboard. Left off where a sheet covers them anyway. */
-  labels: boolean
   hot: Hot | null
-  /** The projects, one per bench, in order. */
-  seats: readonly string[]
   onHot: (hot: Hot | null) => void
-  onProject: (index: number) => void
   onVisit: (place: PlaceId) => void
+  /** The library's bookcase and books, while the middle car is the library; null while it is the passenger car. */
+  library: ReactNode
 }
 
-/** The line across the sea: the floating halt, the rails, the posts, and the red train that runs between halt and town. */
-export function Railway({ place, still, labels, hot, seats, onHot, onProject, onVisit }: RailwayProps) {
+/**
+ * The line across the sea: the floating halt, the rails, the posts, and the
+ * red train. Its middle car is the hub of the whole site: every other scene
+ * is reached from one of its window seats.
+ */
+export function Railway({ place, still, hot, onHot, onVisit, library }: RailwayProps) {
   const cars = useRef<Group>(null)
   const lamp = useRef<PointLight>(null)
 
@@ -97,7 +99,7 @@ export function Railway({ place, still, labels, hot, seats, onHot, onProject, on
     if (lamp.current) lamp.current.intensity = 0.9 + air.night.value * 6
   }, -4)
 
-  const board = () => onVisit('train')
+  const board = place === 'halt' ? () => onVisit('cabin') : undefined
 
   return (
     <>
@@ -105,13 +107,7 @@ export function Railway({ place, still, labels, hot, seats, onHot, onProject, on
       {POSTS.map((x) => (
         <Piece key={x} name="Line_Post" position={[x, 0, -2.5]} line={0.03} />
       ))}
-      {ROCKS.map(([x, z, size, turn]) => (
-        <group key={`${x}:${z}`} position={[x, 0, z]} rotation-y={turn} scale={size}>
-          <Piece name="Sea_Rock" line={0} />
-        </group>
-      ))}
-
-      <Piece name="Halt_Deck" line={0.03} {...pressable(board)} />
+      <Piece name="Halt_Deck" line={0.03} {...(board ? pressable(board) : {})} />
       <Piece name="Halt_Glow" material={glow} line={0} castShadow={false} />
       <Suspense fallback={null}>
         <Text font={displayFace} fontSize={0.34} letterSpacing={0.03} color={LETTERING.day} anchorX="center" anchorY="middle" position={HALT.signFace as [number, number, number]}>
@@ -121,17 +117,11 @@ export function Railway({ place, still, labels, hot, seats, onHot, onProject, on
 
       <group ref={cars}>
         <Car offset={-CAR.pitch} onBoard={board} />
-        <Car offset={0} onBoard={board} slots={{ names: seats, hot, labelled: labels && place === 'train', onHot, onProject }} />
+        <Car offset={0} onBoard={board} seats={{ hot, live: place === 'cabin', onHot, onVisit }} fitting={library ?? undefined} />
         <Car offset={CAR.pitch} onBoard={board} />
         <Piece name="Car_Lamps" material={glow} line={0} castShadow={false} position={[CAR.pitch, 0, 0]} />
         <Piece name="Car_Lamps" material={glow} line={0} castShadow={false} position={[-CAR.pitch, 0, 0]} rotation={[0, Math.PI, 0]} />
         <pointLight ref={lamp} position={[0, CAR.ceiling - 0.4, 0]} color="#ffe4bd" intensity={0.9} distance={9} decay={1.6} />
-        {/* The destination, lettered over the middle door. */}
-        <Suspense fallback={null}>
-          <Text font={displayFace} fontSize={0.2} letterSpacing={0.05} color={LETTERING.day} anchorX="center" anchorY="middle" position={[0, CAR.ceiling + 0.14, CAR.halfWidth + 0.006]}>
-            Crumb Harbour
-          </Text>
-        </Suspense>
       </group>
     </>
   )

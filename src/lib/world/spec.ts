@@ -1,11 +1,11 @@
 // Measurements the modeller and the app both need: where things stand, where
-// lettering goes on the baked models, where light and steam come from.
-// Kept free of geometry code so the app can read it without bundling the kit.
-import { CLEARING, DECK, TOWN_X } from './terrain.ts'
+// lettering goes on the baked models, where light comes from. Kept free of
+// geometry code so the app can read it without bundling the kit.
+import { DECK } from './terrain.ts'
 
 export type Triple = readonly [number, number, number]
 
-/** One railcar. It is built along x, centred, with its floor at the level of every platform. */
+/** One railcar. It is built along x, centred, with its floor at the level of the halt's deck. */
 export const CAR = {
   length: 8.4,
   /** Centre-to-centre distance between coupled cars. */
@@ -15,11 +15,11 @@ export const CAR = {
   sill: 1.85,
   lintel: 2.95,
   ceiling: 3.32,
-  /** Where the four benches of the north side stand along the car: one project sits on each. */
+  /** Where the four pairs of facing benches stand along the car: one destination is reached from each. */
   benches: [-2.76, -0.92, 0.92, 2.76],
   benchZ: -0.98,
-  /** Where a bench's ticket is pinned: on the window post above it. */
-  tag: [0, 2.05, -0.2] as Triple,
+  /** Where a destination's card is pinned: on the window post above its bench. */
+  tag: [0, 2.3, -0.3] as Triple,
   lamps: [-2.6, 0, 2.6],
 }
 
@@ -35,77 +35,78 @@ export const HALT = {
   lamp: [7.2, DECK + 3.1, -5.2] as Triple,
 }
 
-/** The town's quay runs along the north side of the rails. */
-export const QUAY = {
-  sign: { at: [TOWN_X - 16, DECK + 2.6, -5.4] as Triple, width: 3.6, height: 0.66 },
-  lamps: [
-    [TOWN_X - 22, DECK + 3.3, -5.3] as Triple,
-    [TOWN_X + 20, DECK + 3.3, -5.3] as Triple,
-  ],
-  lighthouse: [TOWN_X - 36, DECK, -7] as Triple,
+/** A project's book. Closed, it lies flat on its back board with its spine along its west edge; it opens in the middle. */
+export const BOOK = { width: 0.42, height: 0.56, thickness: 0.09, board: 0.012 }
+
+/**
+ * The library: the middle car of the train, with a great bookcase where its
+ * north benches were. Measured from the middle of the car, heights from its floor.
+ */
+export const LIBRARY = {
+  /** The bookcase stands against the north wall, across the two middle windows. */
+  case: { west: -1.38, east: 1.38, back: -1.27, front: -0.98, top: 2.0 },
+  /** The two ordinary shelves, below and above the ledge. */
+  shelves: [0.53, 1.47] as const,
+  /** The ledge the four projects stand on, face out. */
+  ledge: 0.86,
+  /** Where each one stands along it, and how far it leans back against the case. */
+  berths: [-0.84, -0.28, 0.28, 0.84],
+  lean: 0.2,
+  /** Where the middle of an open book comes to rest to be read, how far it is tipped back toward the reader, and how far away the reader's eye is. */
+  lectern: [0.1, 1.36, -0.12] as Triple,
+  tip: 0.42,
+  arm: 0.92,
 }
 
 /**
- * The bakery, measured from the middle of its shop floor. The shop front
- * faces south (+z) over the quay to the sea. The attic is the same house's
- * roof space.
+ * The clocktower's room, measured from the middle of its floor. It is an
+ * octagon; the wall at +z is the clock face, and the whole room is turned so
+ * that wall faces the low sun.
  */
-export const BAKERY = {
-  at: [TOWN_X, DECK, -13.6] as Triple,
-  halfWidth: 5.2,
-  halfDepth: 4.2,
-  height: 3.3,
-  counter: 1.0,
-  book: [-0.75, 1.0, -0.28] as Triple,
-  mug: [0.62, 1.0, -0.12] as Triple,
-  chalkboard: { at: [3.25, 2.12, -4.02] as Triple, width: 2.3, height: 1.3 },
-  /** The name board, on the front of the house above the awning. */
-  sign: { at: [-2.4, 4.08, 4.5] as Triple, width: 3.6, height: 0.66 },
-  lamp: [-0.4, 2.55, 0.4] as Triple,
-  /** The shop window the afternoon sun comes through: x from, x to, y from, y to. */
-  window: [-4.3, -0.5, 0.85, 2.75] as const,
-  oven: [4.3, 0.75, -1.6] as Triple,
-  /** Where the chimney stands, as [x, z]: against the east wall, at the back of the oven. */
-  chimney: [4.72, -2.6] as const,
-}
-
-/** The attic, measured from the middle of its own floor, which is the bakery's ceiling. */
-export const ATTIC = {
-  floor: BAKERY.height + 0.2,
-  /** Height of the low walls the roof springs from, and how far the ridge rises above them. */
-  knee: 1.1,
-  rise: 3.3,
-  lantern: [0.4, 3.05, -0.4] as Triple,
-  /**
-   * The five clusters of artefacts, one per kind of skill, in the order of
-   * SKILLS in src/content/site.ts. `at` is where the cluster rests, `tag`
-   * where its hand-written label floats.
-   */
-  clusters: [
-    { at: [-2.1, 1.02, -3.45] as Triple, tag: [-2.1, 2.0, -3.3] as Triple },
-    { at: [1.7, 1.18, -1.5] as Triple, tag: [1.7, 2.75, -1.5] as Triple },
-    { at: [-3.5, 0, 0.1] as Triple, tag: [-3.5, 1.75, 0.1] as Triple },
-    { at: [-0.4, 2.55, -1.9] as Triple, tag: [-0.4, 3.3, -1.9] as Triple },
-    { at: [4.35, 1.0, -0.3] as Triple, tag: [4.1, 2.45, -0.3] as Triple },
+export const TOWER = {
+  apothem: 9,
+  height: 14,
+  /** Turn of the room about its axis, so that +z points at the sun's bearing. */
+  yaw: -0.6435,
+  clock: { y: 6.5, radius: 3.3 },
+  /** The drafting table's top, and the sketchpad lying on it. */
+  table: [0, 1.12, -0.6] as Triple,
+  pad: [-0.35, 1.2, -0.75] as Triple,
+  pendulum: [0, 9.6, 7.4] as Triple,
+  gears: [
+    [0, 6.5, 8.35, 1.5] as const,
+    [1.75, 5.2, 8.25, 0.8] as const,
+    [-1.5, 7.9, 8.25, 0.65] as const,
   ],
+  lamp: [2.6, 2.3, -2.2] as Triple,
 }
 
-/** The postbox faces the campfire bench, a quarter turn east of south. */
-export const POSTBOX = {
-  at: [CLEARING.x - 1.6, CLEARING.z - 1.4] as readonly [number, number],
-  yaw: 0.55,
-  slot: [0, 1.98, 0.32] as Triple,
-  wing: [0.36, 1.98, -0.05] as Triple,
-  crossbar: 1.22,
-  charms: [
-    { x: -1.04, drop: 0.3 },
-    { x: -0.43, drop: 0.46 },
-    { x: 0.43, drop: 0.26 },
-    { x: 1.04, drop: 0.4 },
-  ],
-  charm: { width: 0.56, height: 0.32 },
-  /** Built a size larger than life, so its charms can be read from the bench. */
-  scale: 1.25,
-}
+/** The four plaques of the coastal signpost, top to bottom. `side` is the way each points as you face the post from inland. */
+export const PLAQUES = [
+  { height: 3.3, side: -1, yaw: -0.38 },
+  { height: 2.76, side: 1, yaw: 0.34 },
+  { height: 2.22, side: -1, yaw: -0.12 },
+  { height: 1.68, side: 1, yaw: 0.1 },
+] as const
 
-export const CAMPFIRE = { at: [CLEARING.x + 1.4, CLEARING.z + 1.2] as readonly [number, number] }
+export const PLAQUE = { length: 1.9, height: 0.44, thickness: 0.08, inset: 0.14 }
+
+/** The signpost stands on a knoll, a little east of the middle of the shore. */
+export const SIGNPOST = { at: [2, 0] as readonly [number, number] }
+
+/** The bus stop, measured from its site at the water's edge. The shelter opens south (+z), on to the sea. */
+export const STOP = {
+  ground: 0.42,
+  shelter: [0, -2.4] as readonly [number, number],
+  lantern: [0.1, 2.42, -1.15] as Triple,
+  booth: [3.9, -1.7] as readonly [number, number],
+  /** The receiver's rest on its hook, relative to the booth. */
+  hook: [-0.24, 1.52, -0.24] as Triple,
+  boothSign: [0, 2.62, 0.52] as Triple,
+  pole: [-3.7, 0.3] as readonly [number, number],
+  /** Heights of the four planks nailed to the pole, top to bottom. */
+  planks: [2.08, 1.72, 1.36, 1.0],
+  plank: { width: 1.5, height: 0.3 },
+  /** The timetable board on the shelter's back wall. */
+  notice: [-1.3, 1.75, -3.27] as Triple,
+}

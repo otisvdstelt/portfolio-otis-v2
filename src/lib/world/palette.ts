@@ -98,13 +98,17 @@ export const PAINT = {
   cornflower: '#7c9fd7',
   cornflowerDeep: '#5a7fb9',
   rug: '#9a3f3a',
+  dandelion: '#fbfaf2',
+  boothGreen: '#3d6b5c',
+  boothGreenLight: '#5d8f7c',
   wine: '#5c262b',
   wineLight: '#7b3438',
 
   // Sky and light.
   // Clouds at the end of the day: violet underneath, peach where the sun still reaches.
-  cloudShade: '#a99cc4',
-  cloud: '#ffe6cf',
+  // Clouds are painted white; the hour's light is what colours them.
+  cloudShade: '#c7cde6',
+  cloud: '#ffffff',
   tealTin: '#3f8f95',
   tealTinDeep: '#2c6a72',
   sunflower: '#f0b82c',
@@ -116,3 +120,6 @@ export const PAINT = {
 
 /** The colours potions come in. */
 export const JEWELS = [PAINT.ruby, PAINT.emerald, PAINT.sapphire, PAINT.honey, PAINT.violet, PAINT.teal, PAINT.rose, PAINT.lime] as const
+
+/** The leather each project's book in the library is bound in, first to last: the paint on the model and the cover on the page are the same four. */
+export const LEATHERS = ['#93333a', '#2f5d48', '#34578f', '#a06c22'] as const

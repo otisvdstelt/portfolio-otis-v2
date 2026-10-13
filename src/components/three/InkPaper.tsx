@@ -11,6 +11,7 @@ const fragment = /* glsl */ `
   uniform float uReveal;
   uniform float uDpr;
   uniform float uBorder;
+  uniform float uWipe;
 
   float inkHash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -91,12 +92,25 @@ const fragment = /* glsl */ `
     float ragged = margin - uBorder + (inkFbm(px * 0.018) - 0.5) * uBorder * 3.2 + (inkNoise(px * 0.13) - 0.5) * 5.0;
     float painted = smoothstep(0.0, 9.0, ragged);
 
-    // --- The reveal: paint spreading outward from the middle of the sheet.
-    float spread = uReveal * 2.0 - length((uv - vec2(0.5, 0.45)) * vec2(aspect, 1.0)) - (inkFbm(px * 0.006 + 9.0) - 0.5) * 0.7;
-    painted *= smoothstep(0.0, 0.16, spread);
+    if (uWipe < 0.5) {
+      // --- The first arrival: paint spreading outward from the middle of the sheet.
+      float spread = uReveal * 2.0 - length((uv - vec2(0.5, 0.45)) * vec2(aspect, 1.0)) - (inkFbm(px * 0.006 + 9.0) - 0.5) * 0.7;
+      painted *= smoothstep(0.0, 0.16, spread);
+    } else {
+      // --- Between scenes: a bank of fog rolling across from the left. It comes in billows, thins what
+      // it has not yet reached, and when it has the whole picture it rolls on and off the far side.
+      float billow = (inkFbm(px * 0.0032 + vec2(time * 0.12, 0.0)) - 0.5) * 0.6 + (inkFbm(px * 0.011 + vec2(time * 0.3, 4.0)) - 0.5) * 0.16;
+      float across = uv.x + billow;
+      float front = (uWipe < 1.5 ? (1.0 - uReveal) : uReveal) * 2.3 - 0.45;
+      float clear = uWipe < 1.5 ? smoothstep(front - 0.34, front, across) : 1.0 - smoothstep(front - 0.34, front, across);
+      float haze = uWipe < 1.5 ? smoothstep(front - 0.34, front + 0.5, across) : 1.0 - smoothstep(front - 0.84, front, across);
+      colour = mix(mix(uPaper, colour, 0.55), colour, haze);
+      painted *= clear;
+    }
 
+    // Paint gathers into a darker rim where a wash stops; fog has no such edge.
     float rim = painted * (1.0 - painted) * 4.0;
-    colour *= 1.0 - rim * 0.16;
+    colour *= 1.0 - rim * (uWipe < 0.5 ? 0.16 : 0.03);
     outputColor = vec4(mix(uPaper, colour, painted), 1.0);
   }
 `
@@ -111,6 +125,7 @@ class InkPaperEffect extends Effect {
         ['uReveal', new Uniform(0)],
         ['uDpr', new Uniform(1)],
         ['uBorder', new Uniform(12)],
+        ['uWipe', new Uniform(0)],
       ]),
     })
   }
@@ -131,6 +146,7 @@ export function InkPaper() {
 
   useFrame(() => {
     effect.uniforms.get('uReveal')!.value = air.reveal.value
+    effect.uniforms.get('uWipe')!.value = air.wipe.value
     effect.uniforms.get('uDpr')!.value = dpr
     // A narrower strip of bare paper on a phone, where every pixel of picture counts.
     effect.uniforms.get('uBorder')!.value = width < 640 ? 7 : 13

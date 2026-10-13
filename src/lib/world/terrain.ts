@@ -1,7 +1,6 @@
-// The lie of the land, and of the sea. The world is one railway laid straight
-// across a flat sea: a floating halt at one end, a coastal town at the other.
-// The asset script bakes the coast from these functions and the app asks them
-// where the ground is when it plants things and parks the camera.
+// The lie of the sea, and of the one piece of land in it. The world is a flat
+// sea with five scenes standing far apart on it; the asset script and the app
+// both ask this file where things are.
 
 // ------------------------------------------------------------ noise
 
@@ -64,74 +63,39 @@ const mix = (a: number, b: number, t: number) => a + (b - a) * t
 
 /** The sea is perfectly flat, and it is the zero everything else is measured from. */
 export const SEA_Y = 0
-/** Platforms, the quay and the floors of the train all stand at one height above the water. */
+/** The halt's deck and the floors of the train stand at one height above the water. */
 export const DECK = 1
-/** The railway runs along z = 0, from the halt at x = 0 east to the town. */
-export const TOWN_X = 300
-export const TRACK = { west: -420, east: TOWN_X + 30, gauge: 1.44 }
+/** The railway runs along z = 0, east from the halt at x = 0. */
+export const TRACK = { west: -420, east: 420, gauge: 1.44 }
 /** While the train is under way it runs round this stretch for ever; telegraph posts stand along it. */
 export const CRUISE = { from: 80, to: 200, speed: 9, postEvery: 40 }
 
-/** The town's level ground behind the quay. */
-export const TOWN = { west: 270, east: 334, front: -1.9, back: -25 }
-/** The clearing on the hill behind the town, where the campfire burns. */
-export const CLEARING = { x: TOWN_X + 35, z: -58, radius: 8 }
+/**
+ * Where each standalone scene stands, as [x, z]. They are a thousand apart, so
+ * that from any one of them the others are lost in the haze: each has the sea
+ * and the sky to itself.
+ */
+export const SITES = {
+  tower: [2000, 0],
+  signpost: [3000, 0],
+  busstop: [4000, 0],
+} as const satisfies Record<string, readonly [number, number]>
 
-/** The coast as a patch of ground: the terrain mesh covers exactly this rectangle. */
-export const LAND = { west: 232, east: 396, north: -134, south: 2 }
+/** The clocktower's room hangs high over the sea, so its window looks out on sky. */
+export const TOWER_FLOOR = 34
 
-// The island before anyone levelled it: one rounded hill with a ragged shoreline.
-function wildHeight(x: number, z: number): number {
-  const d = Math.hypot((x - 314) / 68, (z + 66) / 62) + (fbm(x * 0.024, z * 0.024) - 0.5) * 0.36
-  if (d >= 1) return -1 - (d - 1) * 9
-  const crown = Math.pow(1 - d * d, 0.8)
-  return crown * 17 * (0.72 + 0.56 * fbm(x * 0.03 + 9, z * 0.03 + 4)) + (fbm(x * 0.12, z * 0.12) - 0.5) * 0.7 - 0.7
-}
-
-const CLEARING_LEVEL = wildHeight(CLEARING.x, CLEARING.z)
-
-/** 1 on the town's level ground, 0 away from it. */
-export function townAmount(x: number, z: number): number {
-  return smoothstep(TOWN.west - 8, TOWN.west + 2, x) * (1 - smoothstep(TOWN.east - 2, TOWN.east + 8, x)) * (1 - smoothstep(-TOWN.back, -TOWN.back + 12, -z))
-}
-
-/** Height of the ground. Below the sea's surface means open water. */
-export function heightAt(x: number, z: number): number {
-  // South of the quay wall there is only sea.
-  if (z > TOWN.front) return -4
-  let h = wildHeight(x, z)
-  h = mix(h, DECK, townAmount(x, z))
-  const d = Math.hypot(x - CLEARING.x, z - CLEARING.z)
-  h = mix(h, CLEARING_LEVEL, 1 - smoothstep(CLEARING.radius, CLEARING.radius + 6, d))
-  return h
-}
-
-/** The footpath from the back of the town up to the clearing, as a chain of [x, z]. */
-export const PATH: readonly (readonly [number, number])[] = [
-  [TOWN_X + 9, -19],
-  [TOWN_X + 13, -30],
-  [TOWN_X + 22, -41],
-  [TOWN_X + 30, -50],
-  [CLEARING.x - 1, CLEARING.z + 3],
-]
-
-/** Distance to the footpath, wobbled so its edges are not ruler-straight. */
-export function pathDistance(x: number, z: number): number {
-  const wx = x + (valueNoise(x * 0.35, z * 0.35) - 0.5) * 1.4
-  const wz = z + (valueNoise(x * 0.35 + 40, z * 0.35 + 40) - 0.5) * 1.4
-  let best = Infinity
-  for (let i = 0; i < PATH.length - 1; i++) {
-    const [ax, az] = PATH[i]
-    const [bx, bz] = PATH[i + 1]
-    const dx = bx - ax
-    const dz = bz - az
-    const t = Math.min(1, Math.max(0, ((wx - ax) * dx + (wz - az) * dz) / (dx * dx + dz * dz)))
-    best = Math.min(best, Math.hypot(wx - ax - dx * t, wz - az - dz * t))
-  }
-  return best
-}
-
-/** A point on the ground, as [x, y, z]. */
-export function groundAt(x: number, z: number, lift = 0): [number, number, number] {
-  return [x, heightAt(x, z) + lift, z]
+/**
+ * The coast where the signpost stands, measured from the signpost's site: a
+ * low shore running east to west, with the sea to the north (-z) and a
+ * meadow rising gently inland. Below zero is open water.
+ */
+export function shoreHeight(x: number, z: number): number {
+  // The waterline wanders, and the land gives out toward either end.
+  const waterline = -3.2 + (fbm(x * 0.06 + 5, 1.7, 3) - 0.5) * 5
+  const inland = z - waterline
+  const ends = 1 - smoothstep(46, 78, Math.abs(x))
+  const rise = smoothstep(-1.5, 16, inland) * 2.1 + (fbm(x * 0.07, z * 0.07, 3) - 0.5) * 0.7 * smoothstep(1, 9, inland)
+  // A small knoll for the signpost to stand on.
+  const knoll = 0.55 * Math.exp(-((x - 2) * (x - 2) + z * z) / 30)
+  return mix(-1.6, rise + knoll + 0.12, smoothstep(-2.5, 1.5, inland) * ends)
 }

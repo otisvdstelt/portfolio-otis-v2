@@ -11,14 +11,12 @@ import { KHRDracoMeshCompression } from '@gltf-transform/extensions'
 import { draco } from '@gltf-transform/functions'
 import draco3d from 'draco3dgltf'
 import type { Part } from '../src/lib/world/kit.ts'
-import { buildCampfire, buildPostbox } from '../src/lib/world/camp.ts'
-import { buildAttic, buildBakery } from '../src/lib/world/interiors.ts'
 import { buildCar, buildHalt, buildLine } from '../src/lib/world/railway.ts'
-import { buildTown } from '../src/lib/world/town.ts'
+import { buildBusStop, buildClouds, buildCoast, buildLibrary, buildTower } from '../src/lib/world/scenes.ts'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
-const parts: Part[] = [...buildLine(), ...buildHalt(), ...buildCar(), ...buildTown(), ...buildBakery(), ...buildAttic(), ...buildPostbox(), ...buildCampfire()]
+const parts: Part[] = [...buildLine(), ...buildHalt(), ...buildCar(), ...buildClouds(), ...buildLibrary(), ...buildTower(), ...buildCoast(), ...buildBusStop()]
 
 const doc = new Document()
 doc.getRoot().getAsset().generator = 'portfolio-otis build-world.ts'

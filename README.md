@@ -1,18 +1,19 @@
 # Otis van der Stelt: portfolio
 
-A portfolio you travel through. One hand-painted 3D world along a railway laid across a flat sea: you board a red train at a floating halt, and each section of the site is a scene the line reaches.
+A portfolio you travel through. One hand-painted 3D world on a flat sea: you board a red train at a floating halt, the train car is the main menu, and each section of the site is a scene you reach by taking a window seat and letting the fog roll over.
 
 Built with Vite, React 19, TypeScript, Tailwind CSS v4, Three.js, React Three Fiber, drei and TanStack Query.
 
-## The five scenes
+## The journey
 
 | Scene | Section | What happens there |
 | --- | --- | --- |
-| **Stillwater Halt** | Home | The train waits at a platform floating on a mirror sea. The name, the title and one button: "Board the Train". |
-| **The train** | Projects | The camera glides in through a window and the train pulls out. Each bench is a project; choosing one drops a parchment sheet from the ceiling with that repository's figures, fetched live from GitHub. |
-| **The bakery** | About | A shop on the quay of a coastal town. The guestbook on the counter opens to who Otis is, where Otis studies and how Otis works. |
-| **The attic** | Skills | The roof space of the same house, crammed with potions, books and brass. Five clusters of artefacts stand for five kinds of skill; point at one and it rises and glows. |
-| **The campfire** | Contact | A clearing at night. A winged copper postbox gives up a letter that is a contact form; the wooden tags hanging under it are links. |
+| **Stillwater Halt** | Title card | The train waits at a platform floating on a mirror sea. The name, the title and one button: "Board the Train". |
+| **The train** | Main menu | The camera glides in through a window and the train pulls out. Look around the car, then pick a bench or a stop on the route map: the camera walks down the aisle, sits at that window, and fog rolls across the picture. |
+| **The library car** | Projects | The same car fitted out with a great bookcase, the sea still going by outside. Each project is a leather book standing face out on its ledge; choosing one floats it across the aisle and opens it, and its words are set on its own pages, with that repository's figures fetched live from GitHub. |
+| **The clocktower** | About | A stone room behind a great glass clock face, amber light coming through it. Choosing the sketchpad on the drafting table drops the camera to a top-down view of who Otis is, where Otis studies and the timeline so far. |
+| **The signpost** | Skills | One post in a field of dandelion clocks at the edge of the sea. Each of its four plaques turns the camera its way, turns the sky to its own hour, and blows in a sheet of parchment with what lies that way. |
+| **The bus stop** | Contact | A shelter by the sea at night, a lantern, a telephone box lit from inside. Picking up the telephone brings out a notepad that is the contact form; the planks on the pole are links. |
 
 Also: it is night after 19:00 by your clock (stars, fireflies, lit windows, a dark page), and the switch in the header changes sun for rain.
 
@@ -30,15 +31,15 @@ Node 22.18 or newer is needed (Vite 8, and `npm run world` runs a TypeScript fil
 
 Useful addresses while working:
 
-- `/#/train`, `/#/bakery`, `/#/attic`, `/#/campfire`, `/#/train/seat-2`: open straight at a scene, or at one project's sheet.
+- `/#/cabin`, `/#/library`, `/#/tower`, `/#/signpost`, `/#/busstop`, `/#/library/book-2`: open straight at a scene, or at one project's book.
 - `?time=night` or `?time=day`: override the clock.
 - `?mode=backdrop` or `?mode=roam`: force the phone or the desktop behaviour.
 
 ## Change what it says
 
 - **About, skills, social links, e-mail address:** `src/content/site.ts`.
-- **Projects:** `public/data/projects.json`. One entry per bench (there are four), each naming a GitHub repository as `owner/name` plus a title, a few words on what it is, a summary and a stack. Stars, forks, issues, languages, dates and the live address are not written here: they are fetched from GitHub when the seat is chosen.
-- The LinkedIn tag in `src/content/site.ts` points at LinkedIn's front page until the real profile URL is filled in.
+- **Projects:** `public/data/projects.json`. One entry per book on the library's ledge (there are four), each naming a GitHub repository as `owner/name` plus a title, a few words on what it is, a summary and a stack. Stars, forks, issues, languages, dates and the live address are not written here: they are fetched from GitHub when the book is opened.
+- The LinkedIn plank in `src/content/site.ts` points at LinkedIn's front page until the real profile URL is filled in.
 
 ## Deploy
 
@@ -53,12 +54,13 @@ The generated model and the Draco decoder are committed, so the asset scripts do
 There are no hand-modelled files. Everything that stands in the world is described in TypeScript in `src/lib/world/` as stacked, painted primitives, and `npm run world` bakes it into one Draco-compressed file:
 
 ```
-public/assets/world.glb   55 named meshes, about 141,000 triangles, 6.7 MB -> 544 KB
+public/assets/world.glb   47 named meshes, about 58,000 triangles, 3.1 MB -> 240 KB
 ```
 
 - `kit.ts`: the modelling kit (blocks, posts, lumpy balls, extrusions, rings), each piece coloured per vertex.
-- `terrain.ts`: the map. Where the line runs, where the town and the clearing are, how high the ground is anywhere. The bake and the app both ask it.
-- `railway.ts`, `town.ts`, `interiors.ts`, `camp.ts`: the halt, the train and its interior; the coast, the quay, the houses; the bakery and the attic; the postbox and the fire.
+- `terrain.ts`: the map. Where the line runs, where each scene stands on the sea, how high the signpost's shore is anywhere. The bake and the app both ask it.
+- `railway.ts`: the halt, the line, the train and its interior.
+- `scenes.ts`: the library car's bookcase and its books, the clocktower's room, the coast and its signpost, the bus stop.
 - `spec.ts`: measurements the bake and the app share, such as where lettering goes on a sign.
 
 `npm run draco` copies the glTF Draco decoder from three.js into `public/draco`, so decoding uses files served from this site and not a CDN. `npm run assets` does both.
@@ -71,16 +73,16 @@ public/assets/world.glb   55 named meshes, about 141,000 triangles, 6.7 MB -> 54
 
 ### Painting
 
-Described in full in [DESIGN.md](DESIGN.md). In short: `MeshToonMaterial` with a three-band, nearest-filtered gradient map; drei `<Outlines>` on every model; a watercolour wash and paint-bleed in the material's shader; a mirror sea; and a post-processing pass that adds paper grain, a ragged painted edge and the wash that carries one scene into the next.
+Described in full in [DESIGN.md](DESIGN.md). In short: `MeshToonMaterial` with a three-band, nearest-filtered gradient map; drei `<Outlines>` on every model; a watercolour wash and paint-bleed in the material's shader; a mirror sea; and a post-processing pass that adds paper grain, a ragged painted edge and the fog that rolls across to carry one scene into the next.
 
 ### Devices
 
 `useMode` in `src/hooks/useLayout.ts` is the capability check.
 
-- **Roam** (a wide window with a pointer): a free camera on heavily damped `OrbitControls`, pointer parallax, the train travelling, a coloured light per attic cluster, shadows from the campfire.
-- **Backdrop** (touch, a window under 1024 px, or modest hardware): fixed compositions with framings made for a tall screen, a wash to paper between scenes instead of a camera move, nothing repositioned at run time, fewer lights. The trail becomes a menu pinned to the bottom and panels become sheets that slide up.
+- **Roam** (a wide window with a pointer): a free camera on heavily damped `OrbitControls`, pointer parallax, the train travelling, the walk down the aisle to a window seat, shadows from the lantern.
+- **Backdrop** (touch, a window under 1024 px, or modest hardware): fixed compositions with framings made for a tall screen that breathe slowly, the fog alone between scenes, fewer lights and fewer dandelions. The route map becomes a text menu pinned to the bottom, and each scene's words come up on a sheet above it.
 
-If WebGL is not available at all, every word on the site is still reachable from the trail.
+If WebGL is not available at all, every word on the site is still reachable from the route map.
 
 ## Project layout
 
@@ -88,27 +90,28 @@ If WebGL is not available at all, every word on the site is still reachable from
 scripts/                 build-world.ts (bakes world.glb), copy-draco.mjs
 public/
   assets/world.glb       the baked world
-  data/projects.json     which repositories ride in the train
+  data/projects.json     which repositories stand on the library's ledge
   draco/                 the Draco decoder
 src/
   App.tsx                where the visitor is, what is open, the address, the theme
   content/site.ts        everything the site says about its owner
   hooks/                 the capability check; the project and GitHub queries
   lib/
-    places.ts            the five scenes and their camera shots
+    places.ts            the scenes, their camera shots and their moods
     train.ts             where the train is and how it moves
-    air.ts               the clock, wind, rain and night every shader reads
+    air.ts               the clock, wind, rain, night and fog every shader reads
+    tags.ts              the hand-over of paper tags from the scene to the page
     world/               the generated world (see above)
   components/
     World.tsx            the canvas: reads the model, composes the scene
-    three/               atmosphere and sky, sea, railway, town, camp, meadow, particles, camera rig, materials, the paper pass
-    ui/                  title card, trail, panels, tickets and sheet, guestbook, inventory, letter, sprout
+    three/               atmosphere and sky, sea, railway, the library car and its books, the three scenes off the line, particles, camera rig, materials, the paper pass
+    ui/                  title card, route map, prompts, panels, catalogue and open book (phone), bookmark, sketchpad, signpost sheet, notepad, tags, sprout
 ```
 
 ## Notes
 
-- GitHub's API is used without a key, which allows about sixty requests an hour per visitor. Each sheet costs two and is cached for half an hour. When GitHub refuses, the sheet says so and offers to ask again.
-- The first build of this site was a valley. It is kept under the git tag `valley-v1`.
+- GitHub's API is used without a key, which allows about sixty requests an hour per visitor. Each book costs two and is cached for half an hour. When GitHub refuses, the page says so and offers to ask again.
+- This is the third world the site has had. The first, a valley, is kept under the git tag `valley-v1`; the second, a railway to a coastal town, under `sea-railway-v2`.
 - In development the scene is exposed as `window.__world`, so it can be stepped by hand (`__world.setFrameloop('never')`, then `__world.advance(seconds)`) when the browser has paused animation in a background tab.
 
 ## Credits

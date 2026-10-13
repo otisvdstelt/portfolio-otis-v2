@@ -4,7 +4,7 @@ import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, IcosahedronGe
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { air } from '../../lib/air'
 import { seeded } from '../../lib/world/terrain'
-import { MEADOW_LAYER } from './look'
+import { look, MEADOW_LAYER } from './look'
 import { paintedToon } from './materials'
 
 // ------------------------------------------------------------ motes and fireflies
@@ -84,7 +84,7 @@ export function Motes({ count }: { count: number }) {
           uRain: air.rain,
           uScale: { value: 600 },
           uCentre: { value: new Vector3() },
-          uDust: { value: new Color('#ffd98a') },
+          uDust: { value: look.dust },
           uFirefly: { value: new Color('#e8ff8a').multiplyScalar(1.4) },
         },
         vertexShader: moteVertex,

@@ -4,39 +4,53 @@ import { useEffect, useRef } from 'react'
 import { MathUtils, Vector3, type PerspectiveCamera } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { air } from '../../lib/air'
-import { PLACES, type PlaceId, type Shot } from '../../lib/places'
+import { isDestination, PLACES, seatShot, type PlaceId, type Shot } from '../../lib/places'
 import { sendTrain, train } from '../../lib/train'
-import { heightAt } from '../../lib/world/terrain'
+import { DECK } from '../../lib/world/terrain'
 
-interface Flight {
+/** A straight glide from where the camera is to a shot: boarding, or leaning in to read. */
+interface Glide {
+  kind: 'glide'
   from: Vector3
   fromTarget: Vector3
   fromFov: number
   to: Shot
-  toPlace: PlaceId
-  /** Wash the picture out to paper for the middle of the journey. */
-  veiled: boolean
-  /** The veiled journey is past its middle: the camera is now arriving, not leaving. */
-  crossed: boolean
+  /** It began aboard the train, so where it began is travelling too. */
+  aboard: boolean
+  elapsed: number
+  duration: number
+}
+
+/** Down the aisle and into a window seat. Everything in it is measured from the train, which is moving. */
+interface Walk {
+  kind: 'walk'
+  from: Vector3
+  fromTarget: Vector3
+  fromFov: number
+  seat: Shot
   elapsed: number
   duration: number
 }
 
 interface CameraRigProps {
   place: PlaceId
-  /** The place's panel is open; some places have a closer shot for that. */
+  /** A closer look is wanted: the open book, the sketchpad. */
   reading: boolean
   /** The camera is the visitor's to turn and zoom. */
   roaming: boolean
-  /** Change place by washing out to paper and back with no travelling at all: phones, and people who asked for less motion. */
+  /** Devices shown fixed views, and people who asked for less motion: no walking, only the fog. */
   cuts: boolean
   reducedMotion: boolean
   /** How far the picture is pushed aside to make room for a panel, as fractions of the view: right, up. */
   shift: readonly [number, number]
+  /** Somewhere to turn and look toward, as an offset from the shot's own target. */
+  gaze: readonly [number, number, number] | null
+  /** The camera has got somewhere: the place now on screen. */
+  onArrive: (place: PlaceId) => void
 }
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
-const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
+const smooth = (edge0: number, edge1: number, x: number) => MathUtils.smoothstep(x, edge0, edge1)
 const right = new Vector3()
 const up = new Vector3()
 const a = new Vector3()
@@ -46,15 +60,21 @@ const b = new Vector3()
 const stand = (shot: Shot, out: Vector3) => out.set(shot.position[0] + (shot.onTrain ? train.x : 0), shot.position[1], shot.position[2])
 const aim = (shot: Shot, out: Vector3) => out.set(shot.target[0] + (shot.onTrain ? train.x : 0), shot.target[1], shot.target[2])
 
+/** How long the fog takes to roll over the picture, and to roll off it again, in seconds. */
+const FOG = { over: 1.15, off: 1.5 }
+
 /**
- * Moves the camera between the scenes. Boarding the train is one unbroken
- * glide, down from the wide view and in through the window. Every other
- * journey crosses walls or a great deal of open sea, so the picture washes
- * out to paper as the camera pulls away and washes back as it settles into
- * the new place. Once it has landed, the orbit belongs to the visitor, within
- * what the room allows, and the pointer leans the view a little for depth.
+ * Moves the camera through the journey.
+ *
+ * Boarding at the halt is one glide: down from the wide view, across the
+ * platform and in through a window. Leaving the train car for a scene, the
+ * camera walks down the aisle, slides into the seat facing that scene's
+ * window, and the moment it has settled there a bank of fog rolls across the
+ * picture; when the fog rolls off, the scene is the new one. Everywhere else
+ * the fog alone does the travelling. Once the camera has landed the orbit
+ * belongs to the visitor, within what the place allows.
  */
-export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift }: CameraRigProps) {
+export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift, gaze, onArrive }: CameraRigProps) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const size = useThree((s) => s.size)
   const controls = useRef<OrbitControlsImpl>(null)
@@ -67,15 +87,18 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift 
     /** Where the camera is before the pointer leans it. */
     base: new Vector3(),
     lean: new Vector3(),
+    gaze: new Vector3(),
     pointer: { x: 0, y: 0 },
-    flight: null as Flight | null,
-    /** 0 settled, 1 washing out, 2 washing back in. */
-    dip: 2,
+    move: null as Glide | Walk | null,
+    /** 0 clear, 1 fog rolling over, 2 fog rolling off. */
+    fog: 2,
     /** The shot being held, or headed for. */
     shot,
     place,
     /** The place the camera has actually reached. */
     shown: place,
+    /** The last place the page was told about. */
+    told: place,
     trainX: 0,
     fov: shot.fov,
     shift: [0, 0],
@@ -88,27 +111,30 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift 
     r.shot = shot
     r.place = place
     if (!r.started || !controls.current) return
-    if (cuts && place !== leaving) {
-      r.flight = null
-      r.dip = 1
-      return
-    }
-    // Boarding at the halt, and leaning in to read, are the two journeys with nothing in the way.
-    const veiled = place !== leaving && !(leaving === 'halt' && place === 'train')
-    r.flight = { from: r.base.clone(), fromTarget: controls.current.target.clone(), fromFov: r.fov, to: shot, toPlace: place, veiled, crossed: false, elapsed: 0, duration: veiled ? 2.5 : place !== leaving ? 3.3 : 1.5 }
-    if (!veiled && place !== leaving) {
+    const here = { from: r.base.clone(), fromTarget: controls.current.target.clone(), fromFov: r.fov, elapsed: 0 }
+    if (place === leaving) {
+      // The same place, a different look at it.
+      r.move = { kind: 'glide', ...here, to: shot, aboard: Boolean(shot.onTrain), duration: 1.6 }
+    } else if (leaving === 'halt' && place === 'cabin' && !cuts) {
+      // Boarding: nothing in the way but a window.
+      r.move = { kind: 'glide', ...here, to: shot, aboard: false, duration: 3.3 }
       sendTrain(place, false)
       r.shown = place
+    } else if (leaving === 'cabin' && isDestination(place) && !cuts) {
+      r.move = { kind: 'walk', ...here, from: here.from.setX(here.from.x - train.x), fromTarget: here.fromTarget.setX(here.fromTarget.x - train.x), seat: seatShot(place), duration: 3.4 }
+    } else {
+      r.move = null
+      air.wipe.value = 1
+      r.fog = 1
     }
   }, [shot, place, cuts])
 
   useEffect(() => {
     const orbit = controls.current
     if (!orbit) return
-    // The moment the visitor grabs the view it is theirs, unless the picture is washed out.
+    // The moment the visitor grabs the view it is theirs, unless they are on their way to a seat.
     const release = () => {
-      const flight = rig.current.flight
-      if (flight && !flight.veiled) rig.current.flight = null
+      if (rig.current.move?.kind === 'glide') rig.current.move = null
     }
     orbit.addEventListener('start', release)
     return () => orbit.removeEventListener('start', release)
@@ -143,9 +169,10 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift 
       // Move the camera itself too, or the free-roam branch below would read its old position straight back.
       camera.position.copy(r.base)
       aim(to, orbit.target)
+      r.gaze.set(0, 0, 0)
       r.fov = to.fov
       r.trainX = train.x
-      r.flight = null
+      r.move = null
     }
     if (!r.started) {
       arrive(r.shot, r.place)
@@ -155,74 +182,92 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift 
     // Aboard, the camera is carried by the train (including round the end of its lap).
     const carried = train.x - r.trainX
     r.trainX = train.x
-    if (carried !== 0 && r.shot.onTrain && r.shown === r.place && !r.flight) {
+    // (A walk works in the train's own measure and needs no carrying.)
+    if (carried !== 0 && PLACES[r.shown].view.onTrain && r.move?.kind !== 'walk') {
       r.base.x += carried
       camera.position.x += carried
       orbit.target.x += carried
+      if (r.move?.kind === 'glide' && r.move.aboard) {
+        r.move.from.x += carried
+        r.move.fromTarget.x += carried
+      }
     }
 
-    // The wash, for devices with fixed views: out to paper, change the view while nothing shows, and back in.
-    if (r.dip === 1) {
-      air.reveal.value = Math.max(0, air.reveal.value - dt / 0.34)
+    // The fog: over the picture, change the scene while nothing shows, and off again.
+    if (r.fog === 1) {
+      air.reveal.value = Math.max(0, air.reveal.value - dt / FOG.over)
       if (air.reveal.value === 0) {
         arrive(r.shot, r.place)
-        r.dip = 2
+        air.wipe.value = 2
+        r.fog = 2
       }
-    } else if (r.dip === 2) {
-      air.reveal.value = Math.min(1, air.reveal.value + dt / (state.clock.elapsedTime < 3 ? 1.9 : 0.75))
-      if (air.reveal.value === 1) r.dip = 0
+    } else if (r.fog === 2) {
+      air.reveal.value = Math.min(1, air.reveal.value + dt / (air.wipe.value === 0 ? 1.9 : FOG.off))
+      if (air.reveal.value === 1) r.fog = 0
     }
 
-    if (r.flight) {
-      const f = r.flight
-      f.elapsed += dt
-      const p = Math.min(1, f.elapsed / f.duration)
-      if (f.veiled) {
-        if (p < 0.5) {
-          // Leaving: draw back and up a little as the paper takes over.
-          const u = easeOut(p * 2)
-          a.subVectors(f.from, f.fromTarget).normalize().multiplyScalar(0.7).setY(0.25)
-          r.base.copy(f.from).addScaledVector(a, u)
-          orbit.target.copy(f.fromTarget)
-          air.reveal.value = 1 - MathUtils.smoothstep(p * 2, 0, 0.8)
-        } else {
-          if (!f.crossed) {
-            // Nothing can be seen: this is the moment to put the train where the story needs it.
-            f.crossed = true
-            sendTrain(f.toPlace, true)
-            r.shown = f.toPlace
-            r.trainX = train.x
-            r.fov = f.to.fov
-          }
-          // Arriving: settle forward into the new place as the paint comes back.
-          const v = easeOut((p - 0.5) * 2)
-          stand(f.to, b)
-          aim(f.to, orbit.target)
-          a.subVectors(b, orbit.target).normalize().multiplyScalar(0.7).setY(0.25)
-          r.base.copy(b).addScaledVector(a, 1 - v)
-          air.reveal.value = MathUtils.smoothstep((p - 0.5) * 2, 0.15, 1)
-        }
-      } else {
-        const e = easeInOut(p)
-        r.base.lerpVectors(f.from, stand(f.to, b), e)
-        orbit.target.lerpVectors(f.fromTarget, aim(f.to, b), e)
-        r.fov = MathUtils.lerp(f.fromFov, f.to.fov, e)
+    const m = r.move
+    if (m?.kind === 'glide') {
+      m.elapsed += dt
+      const p = Math.min(1, m.elapsed / m.duration)
+      const e = easeInOut(p)
+      r.base.lerpVectors(m.from, stand(m.to, b), e)
+      orbit.target.lerpVectors(m.fromTarget, aim(m.to, b), e)
+      r.fov = MathUtils.lerp(m.fromFov, m.to.fov, e)
+      if (p >= 1) r.move = null
+    } else if (m?.kind === 'walk') {
+      m.elapsed += dt
+      const p = Math.min(1, m.elapsed / m.duration)
+      const e = easeInOut(p)
+      // Step out into the aisle, walk along it, then slide across and sit.
+      const startX = m.from.x
+      const seatX = m.seat.position[0]
+      const along = smooth(0.08, 0.82, e)
+      const sitting = smooth(0.7, 1, e)
+      const x = MathUtils.lerp(startX, seatX, along)
+      const z = MathUtils.lerp(MathUtils.lerp(m.from.z, 0.04, smooth(0, 0.3, e)), m.seat.position[2], sitting)
+      const standing = DECK + 1.34 + (reducedMotion ? 0 : Math.sin(along * Math.abs(seatX - startX) * 3.2) * 0.022 * (1 - sitting))
+      const y = MathUtils.lerp(MathUtils.lerp(m.from.y, standing, smooth(0, 0.25, e)), m.seat.position[1], sitting)
+      r.base.set(train.x + x, y, z)
+      // Eyes along the aisle while walking; round to the window as the seat is taken.
+      const heading = Math.sign(seatX - startX) || 1
+      a.set(train.x + x + heading * 2.4, DECK + 1.2, -0.25)
+      b.set(train.x + m.fromTarget.x, m.fromTarget.y, m.fromTarget.z)
+      a.lerpVectors(b, a, smooth(0, 0.3, e))
+      orbit.target.lerpVectors(a, aim(m.seat, b), smooth(0.58, 1, e))
+      r.fov = MathUtils.lerp(m.fromFov, m.seat.fov, e)
+      if (p >= 1) {
+        // Seated, facing the window: this is the moment the fog comes.
+        r.move = null
+        air.wipe.value = 1
+        r.fog = 1
       }
-      if (p >= 1) r.flight = null
-    } else if (roaming && r.dip !== 1) {
-      // The controls have just moved the camera; that is the new resting place. Keep it out of the sea and the hillside.
+    } else if (roaming && r.fog !== 1) {
+      // The controls have just moved the camera; that is the new resting place. Keep it out of the sea.
       r.base.copy(camera.position)
-      if (r.shown === 'halt') r.base.y = Math.max(r.base.y, 0.7)
-      if (r.shown === 'campfire') r.base.y = Math.max(r.base.y, heightAt(r.base.x, r.base.z) + 1.2)
+      if (r.shown === 'halt' || r.shown === 'busstop') r.base.y = Math.max(r.base.y, 0.7)
     }
+
+    if (r.told !== r.shown) {
+      r.told = r.shown
+      onArrive(r.shown)
+    }
+
+    // Something to turn and look at: the way a plaque is pointing.
+    const settled = !r.move && r.fog === 0
+    a.set(0, 0, 0)
+    if (gaze && settled) a.set(gaze[0], gaze[1], gaze[2])
+    b.copy(r.gaze).lerp(a, 1 - Math.exp(-dt * 2.2))
+    orbit.target.add(a.subVectors(b, r.gaze))
+    r.gaze.copy(b)
 
     // What the visitor may do with the view depends on where they are: a room is not the open sea.
-    const held = r.shot
+    const held = r.shown === r.place ? r.shot : PLACES[r.shown].view
     orbit.minDistance = held.reach[0]
     orbit.maxDistance = held.reach[1]
     orbit.minPolarAngle = held.tilt[0]
     orbit.maxPolarAngle = held.tilt[1]
-    if (held.swing === undefined || r.flight) {
+    if (held.swing === undefined || r.move || gaze) {
       orbit.minAzimuthAngle = -Infinity
       orbit.maxAzimuthAngle = Infinity
     } else {
@@ -239,7 +284,7 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift 
     camera.position.copy(r.base)
     camera.lookAt(orbit.target)
     camera.updateMatrixWorld()
-    a.set(0, 0, 0).addScaledVector(right.setFromMatrixColumn(camera.matrixWorld, 0), leanX * reach * 0.014).addScaledVector(up.setFromMatrixColumn(camera.matrixWorld, 1), leanY * reach * 0.014)
+    a.set(0, 0, 0).addScaledVector(right.setFromMatrixColumn(camera.matrixWorld, 0), leanX * Math.min(reach, 30) * 0.014).addScaledVector(up.setFromMatrixColumn(camera.matrixWorld, 1), leanY * Math.min(reach, 30) * 0.014)
     r.lean.lerp(a, 1 - Math.exp(-dt * 2.6))
     camera.position.add(r.lean)
     camera.lookAt(orbit.target)
@@ -247,7 +292,7 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift 
     // Slide the whole picture aside when a panel needs the room.
     r.shift[0] = MathUtils.damp(r.shift[0], shift[0], 3.2, dt)
     r.shift[1] = MathUtils.damp(r.shift[1], shift[1], 3.2, dt)
-    if (!r.flight) r.fov = MathUtils.damp(r.fov, held.fov, 4, dt)
+    if (!r.move) r.fov = MathUtils.damp(r.fov, held.fov, 4, dt)
     camera.fov = r.fov
     if (Math.abs(r.shift[0]) > 0.001 || Math.abs(r.shift[1]) > 0.001) {
       camera.setViewOffset(state.size.width, state.size.height, -r.shift[0] * state.size.width, r.shift[1] * state.size.height, state.size.width, state.size.height)

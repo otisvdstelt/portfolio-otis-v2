@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { BackSide, Color, FogExp2, ShaderMaterial, Vector3, type DirectionalLight, type Group, type HemisphereLight, type Mesh } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { air, type Phase, type Weather } from '../../lib/air'
+import type { Mood } from '../../lib/places'
 import { useParts } from './assets'
 import { look, SUN_DIRECTION } from './look'
 import { paintedToon, setGlow } from './materials'
@@ -11,63 +12,68 @@ import { paintedToon, setGlow } from './materials'
 const c = (hex: string) => new Color(hex)
 
 // Golden hour over the sea: periwinkle overhead, peach at the horizon, and
-// shadows that lean toward lavender instead of going grey.
+// shadows that lean toward lavender instead of going grey. A scene's mood
+// may replace any of the first five; everything else is the hour's.
 const DAY = {
-  hemiSky: c('#bcc6f0'),
-  hemiGround: c('#f3cfa6'),
-  hemi: Math.PI * 0.6,
-  sun: c('#ffd4a2'),
-  sunPower: Math.PI * 0.62,
-  density: 0.0056,
   skyTop: c('#6f8ad6'),
   skyHorizon: c('#f6d6c6'),
   skyGlow: c('#ffb07e'),
-  far: c('#9d9fcd'),
   water: c('#8fa2d6'),
+  sun: c('#ffd4a2'),
+  hemiSky: c('#bcc6f0'),
+  hemiGround: c('#f3cfa6'),
+  hemi: Math.PI * 0.6,
+  sunPower: Math.PI * 0.62,
+  density: 0.0056,
+  far: c('#9d9fcd'),
   paper: c('#f7f4eb'),
   ink: c('#1c1917'),
 }
 
 const NIGHT: typeof DAY = {
-  hemiSky: c('#48599a'),
-  hemiGround: c('#232a4a'),
-  hemi: Math.PI * 0.36,
-  sun: c('#a9bfff'),
-  sunPower: Math.PI * 0.2,
-  density: 0.0062,
   skyTop: c('#0b1030'),
   skyHorizon: c('#2f3d78'),
   skyGlow: c('#6f86c9'),
-  far: c('#1b2248'),
   water: c('#263468'),
+  sun: c('#a9bfff'),
+  hemiSky: c('#48599a'),
+  hemiGround: c('#232a4a'),
+  hemi: Math.PI * 0.36,
+  sunPower: Math.PI * 0.2,
+  density: 0.0062,
+  far: c('#1b2248'),
   paper: c('#171b2e'),
   ink: c('#070914'),
 }
 
 // What a gentle rain does to any hour: the colour drains toward slate.
 const SLATE = { sky: c('#8f9ba6'), horizon: c('#c5cbc9'), light: c('#c3c9cf') }
+const DUST = c('#ffd98a')
 
 const ease = (from: number, to: number, delta: number, rate: number) => from + (to - from) * (1 - Math.exp(-delta * rate))
 const scratch = new Color()
+const wanted = new Color()
 const focus = new Vector3()
 
 interface AtmosphereProps {
   phase: Phase
-  /** The place being visited keeps its own hour: it is always night at the campfire. */
-  alwaysNight: boolean
+  /** What the scene being visited does to the hour. */
+  mood: Mood
   weather: Weather
   reducedMotion: boolean
   /** Shadow map edge in texels; smaller on phones. */
   shadowSize: number
 }
 
-/** The hour and the weather: lights, fog, and the clock every shader in the world reads. */
-export function Atmosphere({ phase, alwaysNight, weather, reducedMotion, shadowSize }: AtmosphereProps) {
+/** The hour, the weather and the scene's own mood: lights, fog, and the clock every shader in the world reads. */
+export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: AtmosphereProps) {
   const scene = useThree((s) => s.scene)
   const hemi = useRef<HemisphereLight>(null)
   const sun = useRef<DirectionalLight>(null)
   const fog = useMemo(() => new FogExp2('#f6d6c6', DAY.density), [])
-  const night = phase === 'night' || alwaysNight
+  const night = phase === 'night' || Boolean(mood.night)
+  // The scene's colours as they stand this frame, on their way to wherever the mood wants them.
+  const now = useRef({ skyTop: c('#6f8ad6'), skyHorizon: c('#f6d6c6'), skyGlow: c('#ffb07e'), water: c('#8fa2d6'), sun: c('#ffd4a2'), dust: c('#ffd98a'), mirror: 0.78, shallow: 0, tint: 0, tintColour: c('#7d6ad6') })
 
   useEffect(() => {
     scene.fog = fog
@@ -84,21 +90,41 @@ export function Atmosphere({ phase, alwaysNight, weather, reducedMotion, shadowS
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.1)
     air.time.value += dt
-    air.night.value = ease(air.night.value, night ? 1 : 0, Math.min(delta, 1), 1.6)
     air.rain.value = ease(air.rain.value, weather === 'rain' ? 1 : 0, dt, 0.8)
     air.wind.value = (reducedMotion ? 0.15 : 1) * (1 + air.rain.value * 0.9)
+
+    // While the fog has the whole picture, a new scene's mood is put on at once; otherwise it eases in.
+    const hidden = air.reveal.value < 0.06
+    const rate = hidden ? 60 : 2.4
+    const long = Math.min(delta, 1)
+    air.night.value = ease(air.night.value, night ? 1 : 0, long, hidden ? 60 : 1.6)
+    const m = now.current
+    m.skyTop.lerp(wanted.set(mood.skyTop ?? '#6f8ad6'), 1 - Math.exp(-long * rate))
+    m.skyHorizon.lerp(wanted.set(mood.skyHorizon ?? '#f6d6c6'), 1 - Math.exp(-long * rate))
+    m.skyGlow.lerp(wanted.set(mood.skyGlow ?? '#ffb07e'), 1 - Math.exp(-long * rate))
+    m.water.lerp(wanted.set(mood.water ?? '#8fa2d6'), 1 - Math.exp(-long * rate))
+    m.sun.lerp(wanted.set(mood.sun ?? '#ffd4a2'), 1 - Math.exp(-long * rate))
+    m.dust.lerp(mood.dust ? wanted.set(mood.dust) : DUST, 1 - Math.exp(-long * rate))
+    m.mirror = ease(m.mirror, mood.mirror ?? 0.78, long, rate)
+    m.shallow = ease(m.shallow, mood.shallow ?? 0, long, rate)
+    // The signpost's request: lean the whole sky toward another time of day.
+    m.tint = ease(m.tint, air.tint.amount, long, 2.2)
+    if (air.tint.amount > 0) m.tintColour.lerp(wanted.setRGB(air.tint.r, air.tint.g, air.tint.b), 1 - Math.exp(-long * 3))
 
     const dusk = air.night.value
     const rain = air.rain.value
     const dim = 1 - 0.75 * dusk
 
-    look.skyTop.copy(DAY.skyTop).lerp(NIGHT.skyTop, dusk).lerp(scratch.copy(SLATE.sky).multiplyScalar(dim), rain * 0.7)
-    look.skyHorizon.copy(DAY.skyHorizon).lerp(NIGHT.skyHorizon, dusk).lerp(scratch.copy(SLATE.horizon).multiplyScalar(dim), rain * 0.7)
-    look.skyGlow.copy(DAY.skyGlow).lerp(NIGHT.skyGlow, dusk).multiplyScalar(1 - rain * 0.8)
+    look.skyTop.copy(m.skyTop).lerp(NIGHT.skyTop, dusk).lerp(m.tintColour, m.tint * 0.85).lerp(scratch.copy(SLATE.sky).multiplyScalar(dim), rain * 0.7)
+    look.skyHorizon.copy(m.skyHorizon).lerp(NIGHT.skyHorizon, dusk).lerp(scratch.copy(m.tintColour).lerp(wanted.set('#ffe9d6'), 0.62), m.tint * 0.8).lerp(scratch.copy(SLATE.horizon).multiplyScalar(dim), rain * 0.7)
+    look.skyGlow.copy(m.skyGlow).lerp(NIGHT.skyGlow, dusk).multiplyScalar(1 - rain * 0.8)
     look.far.copy(DAY.far).lerp(NIGHT.far, dusk).lerp(scratch.copy(SLATE.sky).multiplyScalar(dim * 0.9), rain * 0.5)
-    look.water.copy(DAY.water).lerp(NIGHT.water, dusk).lerp(scratch.copy(SLATE.sky).multiplyScalar(dim), rain * 0.4)
+    look.water.copy(m.water).lerp(NIGHT.water, dusk).lerp(m.tintColour, m.tint * 0.4).lerp(scratch.copy(SLATE.sky).multiplyScalar(dim), rain * 0.4)
     look.paper.copy(DAY.paper).lerp(NIGHT.paper, dusk)
     look.ink.copy(DAY.ink).lerp(NIGHT.ink, dusk)
+    look.dust.copy(m.dust)
+    look.mirror = m.mirror + (0.78 - m.mirror) * dusk * 0.6
+    look.shallow = m.shallow * (1 - dusk * 0.6)
     // Haze is the colour of the sky where it meets the sea; that is why there is no horizon line.
     look.fog.copy(look.skyHorizon)
 
@@ -106,29 +132,29 @@ export function Atmosphere({ phase, alwaysNight, weather, reducedMotion, shadowS
     fog.density = (DAY.density + (NIGHT.density - DAY.density) * dusk) * (1 + rain * 1.2)
 
     if (hemi.current) {
-      hemi.current.color.copy(DAY.hemiSky).lerp(NIGHT.hemiSky, dusk).lerp(scratch.copy(SLATE.light).multiplyScalar(dim), rain * 0.6)
+      hemi.current.color.copy(DAY.hemiSky).lerp(m.skyTop, 0.25).lerp(NIGHT.hemiSky, dusk).lerp(m.tintColour, m.tint * 0.35).lerp(scratch.copy(SLATE.light).multiplyScalar(dim), rain * 0.6)
       hemi.current.groundColor.copy(DAY.hemiGround).lerp(NIGHT.hemiGround, dusk).lerp(scratch.copy(SLATE.light).multiplyScalar(dim * 0.8), rain * 0.6)
       hemi.current.intensity = (DAY.hemi + (NIGHT.hemi - DAY.hemi) * dusk) * (1 + rain * 0.12)
     }
     if (sun.current) {
-      sun.current.color.copy(DAY.sun).lerp(NIGHT.sun, dusk).lerp(scratch.copy(SLATE.light).multiplyScalar(dim), rain * 0.7)
-      sun.current.intensity = (DAY.sunPower + (NIGHT.sunPower - DAY.sunPower) * dusk) * (1 - rain * 0.55)
-      // The world is far too long for one shadow map, so the sun's shadow follows whatever is being looked at.
+      sun.current.color.copy(m.sun).lerp(NIGHT.sun, dusk).lerp(scratch.copy(SLATE.light).multiplyScalar(dim), rain * 0.7)
+      sun.current.intensity = (DAY.sunPower + (NIGHT.sunPower - DAY.sunPower) * dusk) * (1 - rain * 0.55) * (1 - m.tint * 0.25)
+      // The world is far too wide for one shadow map, so the sun's shadow follows whatever is being looked at.
       const controls = state.controls as OrbitControlsImpl | null
       focus.copy(controls ? controls.target : state.camera.position)
       sun.current.position.copy(focus).addScaledVector(SUN_DIRECTION, 120)
       sun.current.target.position.copy(focus)
       sun.current.target.updateMatrixWorld()
     }
-    setGlow(Math.max(dusk, rain * 0.55))
+    setGlow(Math.max(dusk, rain * 0.55, m.tint * 0.5))
   }, -3)
 
   return (
     <>
       {/*
         Cel lighting, in three's physical units (a lit surface shows
-        albedo * light / PI). The lavender sky light sets the shadow tone, the
-        warm sun adds the lit band, and together they land a little over each
+        albedo * light / PI). The sky light sets the shadow tone, the warm
+        sun adds the lit band, and together they land a little over each
         part's true colour: the glow of the last hour of sun.
       */}
       <hemisphereLight ref={hemi} args={['#bcc6f0', '#f3cfa6', DAY.hemi]} />

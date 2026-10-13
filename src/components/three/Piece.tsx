@@ -1,7 +1,8 @@
-import { Html, Outlines } from '@react-three/drei'
-import type { ThreeEvent } from '@react-three/fiber'
-import type { ReactNode } from 'react'
-import type { Material } from 'three'
+import { Outlines } from '@react-three/drei'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { Vector3, type Material, type Object3D } from 'three'
+import { tags } from '../../lib/tags'
 import { useParts } from './assets'
 import { OUTLINE } from './look'
 import { paint } from './materials'
@@ -35,13 +36,28 @@ export function Piece({ name, material = paint, hung = false, line = OUTLINE.thi
   )
 }
 
-/** A hand-written paper tag pinned to something in the world. */
+const pin = new Vector3()
+
+/**
+ * A hand-written paper tag pinned to something in the world. The paper itself
+ * is a page element (see ui/Tags.tsx); this holds its place in the scene and
+ * moves it there every frame.
+ */
 export function Tag({ position, shown, children }: { position: readonly [number, number, number]; shown: boolean; children: ReactNode }) {
-  return (
-    <Html position={position as [number, number, number]} center pointerEvents="none" zIndexRange={[30, 10]} wrapperClass="tag-anchor">
-      <div className="tag" data-shown={shown}>
-        {children}
-      </div>
-    </Html>
-  )
+  const id = useId()
+  const anchor = useRef<Object3D>(null)
+
+  useEffect(() => tags.write(id, shown, children), [id, shown, children])
+  useEffect(() => () => tags.remove(id), [id])
+
+  useFrame(({ camera, size }) => {
+    const paper = tags.element(id)
+    if (!paper || !anchor.current) return
+    anchor.current.getWorldPosition(pin).project(camera)
+    // Behind the camera a point still projects on to the screen, mirrored: keep the tag off it.
+    paper.style.visibility = pin.z > 1 ? 'hidden' : ''
+    paper.style.transform = `translate3d(${((pin.x + 1) / 2) * size.width}px, ${((1 - pin.y) / 2) * size.height}px, 0) translate(-50%, -50%)`
+  })
+
+  return <object3D ref={anchor} position={position as [number, number, number]} />
 }

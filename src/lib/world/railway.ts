@@ -5,7 +5,7 @@ import type { BufferGeometry } from 'three'
 import { blob, box, cyl, limb, mirrorZ, part, ring, roughen, slab, type Part } from './kit.ts'
 import { PAINT } from './palette.ts'
 import { CAR, HALT } from './spec.ts'
-import { DECK, seeded, TRACK } from './terrain.ts'
+import { DECK, TRACK } from './terrain.ts'
 
 const QUARTER = Math.PI / 2
 const amber = [PAINT.walnutLight, PAINT.amberDeep] as const
@@ -191,7 +191,6 @@ export function buildHalt(): Part[] {
 export function buildLine(): Part[] {
   const rails: BufferGeometry[] = []
   for (const side of [1, -1]) rails.push(slab(TRACK.west, TRACK.east, -0.04, 0.085, side * 0.72 - 0.045, side * 0.72 + 0.045, PAINT.steel))
-  rails.push(box(0.3, 1.1, 2.2, [PAINT.woodDark, PAINT.wood], { at: [TRACK.east + 0.2, -0.2, 0] }), box(0.34, 0.3, 2.3, PAINT.red, { at: [TRACK.east + 0.2, 0.75, 0] }))
 
   const post = [
     roughen(cyl(0.1, 0.15, 6.4, [PAINT.woodDark, PAINT.wood], { at: [0, -1.2, 0], rot: [0.02, 0, 0.03] }, 7), 0.015, 2),
@@ -201,23 +200,5 @@ export function buildLine(): Part[] {
   for (const z of [-0.6, -0.2, 0.2, 0.6]) post.push(blob(0.07, PAINT.verdigris, { at: [0.15, 4.76, z], scale: [1, 1.3, 1] }, 0.05, 1, 1))
   for (const z of [-0.4, 0.4]) post.push(blob(0.07, PAINT.verdigris, { at: [0.15, 4.31, z], scale: [1, 1.3, 1] }, 0.05, 2, 1))
 
-  // A rock out at sea with one wind-bent pine: the only landmark the crossing has.
-  const random = seeded(8)
-  const rock: BufferGeometry[] = []
-  for (let i = 0; i < 5; i++) {
-    const angle = (i / 5) * Math.PI * 2
-    const size = 1.6 + random() * 1.4
-    rock.push(blob(size, [PAINT.stoneDark, PAINT.stoneLight], { at: [Math.cos(angle) * 1.8, size * 0.2 - 0.2, Math.sin(angle) * 1.5], scale: [1.2, 0.7 + random() * 0.4, 1], rot: [0, angle, 0] }, 0.3, i, 1))
-  }
-  rock.push(blob(1.5, [PAINT.moss, PAINT.clover], { at: [0.2, 1.9, 0], scale: [1.5, 0.35, 1.3] }, 0.2, 9, 1))
-  rock.push(limb([0.4, 1.9, 0], [1.3, 4.2, 0.2], 0.2, 0.12, [PAINT.bark, PAINT.barkLight], 6), limb([1.3, 4.1, 0.2], [2.9, 5.2, 0.3], 0.12, 0.05, PAINT.barkLight, 5))
-  for (const [x, y, z, r] of [
-    [2.2, 5.3, 0.3, 1.2],
-    [3.5, 5.6, 0.2, 0.9],
-    [1.4, 4.7, -0.3, 0.8],
-  ] as const) {
-    rock.push(blob(r, [PAINT.pine, PAINT.pineLight], { at: [x, y, z], scale: [1.5, 0.5, 1.1] }, 0.25, Math.round(r * 10), 1))
-  }
-
-  return [part('Line_Rails', rails), part('Line_Post', post), part('Sea_Rock', rock)]
+  return [part('Line_Rails', rails), part('Line_Post', post)]
 }
