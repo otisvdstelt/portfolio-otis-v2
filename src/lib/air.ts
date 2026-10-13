@@ -23,7 +23,7 @@ export const air = {
   wipe: { value: 0 },
   /**
    * A colour the sky is being asked to lean toward, and how far (0..1). The
-   * signpost sets it: each way it points has its own time of day.
+   * Nothing sets it at present; it is kept for a scene that wants its own hour.
    */
   tint: { r: 0, g: 0, b: 0, amount: 0 },
 }

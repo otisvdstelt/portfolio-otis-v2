@@ -1,38 +1,20 @@
-// Where the train goes. The library is a car of the train itself, built in
-// the car's own space. The other three are scenes of their own, standing
-// alone on the sea, each built in its own local space: origin at its site,
-// +y up, the visitor arriving from +z.
+// What the train is fitted out with. Every section of the site is a car of
+// the train, and each of these is built in the space of the car it goes in:
+// x along the car, z across it (north is negative), the floor at CAR.floor.
 //
-//   the library car        a great bookcase where the benches were
-//   the clocktower archive an octagonal stone room behind a great clock face
-//   the coastal signpost   one weathered post in a field of dandelion clocks
-//   the bus stop shelter   a lantern, a bench and a telephone box by the sea
-import { BufferAttribute, BufferGeometry, Color } from 'three'
-import { blob, box, cone, cyl, extrude, hung, limb, part, put, ring, roughen, slab, type Part } from './kit.ts'
+//   the library car   a great bookcase where the north benches were
+//   the compartment   two facing seats, a table and somebody's luggage
+//   the mail car      a sorting frame of pigeonholes over a desk
+//   the driver's cab  the front of the train: a windscreen, dials and levers
+import { type BufferGeometry, Color } from 'three'
+import { blob, box, cone, cyl, hung, limb, part, ring, roughen, slab, type Part } from './kit.ts'
 import { PAINT } from './palette.ts'
-import { BOOK, CAR, LIBRARY, PLAQUE, PLAQUES, STOP, TOWER } from './spec.ts'
-import { seeded, shoreHeight, valueNoise } from './terrain.ts'
+import { BOOK, CAB, CAR, COMPARTMENT, LIBRARY, MAIL } from './spec.ts'
+import { seeded } from './terrain.ts'
 
 const QUARTER = Math.PI / 2
 const walnut = [PAINT.walnutDeep, PAINT.walnut] as const
 const BINDINGS = [PAINT.moss, PAINT.rug, PAINT.walnut, PAINT.honey, PAINT.cornflowerDeep, PAINT.violet, PAINT.teal, PAINT.terracottaDeep, PAINT.leafDeep, PAINT.wine]
-
-/** A row of books standing on a shelf, spines out toward +z. `fill` is how much of the shelf is still occupied. */
-function bookRow(x0: number, x1: number, y: number, z: number, tallest: number, fill: number, random: () => number): BufferGeometry[] {
-  const pieces: BufferGeometry[] = []
-  for (let x = x0; x < x1 - 0.12; ) {
-    const width = 0.1 + random() * 0.16
-    const height = tallest * (0.62 + random() * 0.38)
-    if (random() < fill) {
-      const lean = random() < 0.08 ? (random() - 0.5) * 0.5 : 0
-      const cover = BINDINGS[Math.floor(random() * BINDINGS.length)]
-      pieces.push(box(width, height, 0.62, [cover, cover], { at: [x + width / 2, y, z], rot: [0, 0, lean] }))
-      if (random() < 0.5) pieces.push(box(width + 0.006, 0.035, 0.63, PAINT.gold, { at: [x + width / 2, y + height * 0.72, z], rot: [0, 0, lean] }))
-    }
-    x += width + 0.02
-  }
-  return pieces
-}
 
 /** A thick old book lying flat, gilt across its spine. */
 function tome(x: number, y: number, z: number, width: number, thickness: number, colour: string, turn: number): BufferGeometry[] {
@@ -41,20 +23,6 @@ function tome(x: number, y: number, z: number, width: number, thickness: number,
     box(width - 0.03, thickness - 0.03, width * 0.72 - 0.01, PAINT.oat, { at: [x + Math.cos(turn) * 0.012, y + 0.015, z - Math.sin(turn) * 0.012], rot: [0, turn, 0] }),
     box(width + 0.006, 0.012, 0.05, PAINT.brass, { at: [x, y + thickness * 0.5, z], rot: [0, turn, 0] }),
   ]
-}
-
-/** A toothed brass wheel of radius 1, lying in the x/y plane and centred, for the app to size and turn. */
-function gear(teeth: number): BufferGeometry[] {
-  const pieces = [cyl(1, 1, 0.12, [PAINT.brass, PAINT.gold], { at: [0, 0, -0.06], rot: [QUARTER, 0, 0] }, 20), cyl(0.3, 0.3, 0.2, PAINT.walnutDeep, { at: [0, 0, -0.1], rot: [QUARTER, 0, 0] }, 10)]
-  for (let i = 0; i < 5; i++) {
-    const angle = (i / 5) * Math.PI * 2
-    pieces.push(cyl(0.2, 0.2, 0.13, PAINT.walnutDeep, { at: [Math.cos(angle) * 0.62, Math.sin(angle) * 0.62, -0.065], rot: [QUARTER, 0, 0] }, 8))
-  }
-  for (let i = 0; i < teeth; i++) {
-    const angle = (i / teeth) * Math.PI * 2
-    pieces.push(box(0.2, 0.2, 0.12, PAINT.gold, { at: [Math.cos(angle) * 1.02, Math.sin(angle) * 1.02 - 0.1, 0], rot: [0, 0, angle - QUARTER] }))
-  }
-  return pieces
 }
 
 // ------------------------------------------------------------ the library car
@@ -258,363 +226,291 @@ export function buildLibrary(): Part[] {
   ]
 }
 
-// ------------------------------------------------------------ the clocktower archive
+// ------------------------------------------------------------ the compartment
 
-function armchair(x: number, z: number, yaw: number, colour: readonly [string, string], winged: boolean): BufferGeometry[] {
+/** The inner face of the car's north wall. */
+const NORTH = -CAR.halfWidth + 0.08
+/** A slab on one side of the car's middle or the other, given its near and far edge from the middle. */
+const flank = (side: number, near: number, far: number, y0: number, y1: number, z0: number, z1: number, colour: Parameters<typeof slab>[6]) => (side > 0 ? slab(near, far, y0, y1, z0, z1, colour) : slab(-far, -near, y0, y1, z0, z1, colour))
+
+/**
+ * Somebody's own corner of the middle car: two deep seats facing each other
+ * across a table under the window post, curtains, a lamp, and everything
+ * they travel with. Built in the car's own space, where the north benches were.
+ */
+export function buildCompartment(): Part[] {
+  const F = CAR.floor
+  const velvet = [PAINT.wine, PAINT.wineLight] as const
+  const { seat, table } = COMPARTMENT
   const pieces: BufferGeometry[] = []
-  for (const lx of [-0.38, 0.38]) for (const lz of [-0.34, 0.34]) pieces.push(cyl(0.05, 0.04, 0.18, PAINT.walnutDeep, { at: [lx, 0, lz] }, 6))
-  pieces.push(box(0.96, 0.34, 0.9, colour, { at: [0, 0.17, 0] }))
-  pieces.push(blob(0.42, [colour[1], colour[1]], { at: [0, 0.56, 0.04], scale: [1.02, 0.3, 0.98] }, 0.08, 2, 1))
-  pieces.push(box(0.96, winged ? 1.25 : 0.72, 0.22, colour, { at: [0, 0.45, -0.42], rot: [-0.12, 0, 0] }))
+  const glow: BufferGeometry[] = []
+
   for (const side of [-1, 1]) {
-    pieces.push(box(0.22, 0.42, 0.9, colour, { at: [side * 0.52, 0.34, 0] }), cyl(0.13, 0.13, 0.9, colour, { at: [side * 0.52, 0.78, -0.45], rot: [QUARTER, 0, 0] }, 8))
-    if (winged) pieces.push(box(0.14, 0.62, 0.32, colour, { at: [side * 0.45, 1.05, -0.26], rot: [-0.12, 0, 0] }))
+    // The high panelled back that makes this a place of its own, and the seat in front of it.
+    pieces.push(roughen(flank(side, seat + 0.58, seat + 0.66, F, F + 1.66, NORTH, -0.2, walnut), 0.004, side + 5))
+    pieces.push(flank(side, seat + 0.55, seat + 0.69, F + 1.66, F + 1.7, NORTH, -0.17, PAINT.brass))
+    pieces.push(flank(side, seat, seat + 0.58, F, F + 0.4, NORTH + 0.02, -0.24, walnut))
+    pieces.push(roughen(flank(side, seat - 0.02, seat + 0.56, F + 0.4, F + 0.5, NORTH + 0.03, -0.25, velvet), 0.01, side + 9))
+    pieces.push(roughen(flank(side, seat + 0.45, seat + 0.58, F + 0.5, F + 1.2, NORTH + 0.03, -0.25, velvet), 0.01, side + 13))
+    // A lace cloth where a head would rest, and an arm at the aisle end with a brass knob on it.
+    pieces.push(flank(side, seat + 0.435, seat + 0.45, F + 0.98, F + 1.2, -0.94, -0.56, [PAINT.oat, PAINT.cream]))
+    pieces.push(flank(side, seat + 0.02, seat + 0.58, F + 0.5, F + 0.68, -0.26, -0.2, walnut), blob(0.04, PAINT.brass, { at: [side * (seat + 0.04), F + 0.7, -0.23] }, 0.02, 1, 1))
+    // Curtains, gathered back either side of each window.
+    for (const x of [0.15, 1.16]) {
+      pieces.push(roughen(box(0.17, 1.14, 0.05, [PAINT.terracottaDeep, PAINT.terracotta], { at: [side * x, F + 0.84, NORTH + 0.035] }), 0.014, Math.round(side * x * 20)))
+      pieces.push(box(0.19, 0.03, 0.06, PAINT.brass, { at: [side * x, F + 1.2, NORTH + 0.035] }))
+    }
   }
-  return pieces.map((piece) => put(piece, { at: [x, 0, z], rot: [0, yaw, 0] }))
+  pieces.push(box(2.75, 0.022, 0.022, PAINT.brass, { at: [0, F + 1.98, NORTH + 0.04] }))
+
+  // The table, on two brass brackets from the wall.
+  pieces.push(roughen(slab(-table.half, table.half, F + table.top - 0.035, F + table.top, NORTH, table.front, [PAINT.walnut, PAINT.walnutLight]), 0.003, 3))
+  for (const x of [-table.half + 0.12, table.half - 0.12]) pieces.push(limb([x, F + table.top - 0.03, table.front - 0.06], [x, F + 0.36, NORTH + 0.02], 0.016, 0.016, PAINT.brass, 6))
+  // On it, beside the journal: tea, a pencil, and a pot of something green.
+  const top = F + table.top
+  pieces.push(cyl(0.045, 0.035, 0.075, [PAINT.cornflowerDeep, PAINT.cornflower], { at: [COMPARTMENT.mug[0], top, COMPARTMENT.mug[2]] }, 9), ring(0.024, 0.007, PAINT.cornflower, { at: [COMPARTMENT.mug[0] + 0.052, top + 0.04, COMPARTMENT.mug[2]] }, 8))
+  pieces.push(limb([-0.44, top + 0.008, -0.86], [-0.35, top + 0.008, -1.02], 0.006, 0.006, PAINT.honey, 5))
+  pieces.push(cyl(0.05, 0.038, 0.07, [PAINT.terracottaDeep, PAINT.terracotta], { at: [-0.44, top, -1.17] }, 8))
+  for (let i = 0; i < 5; i++) pieces.push(blob(0.035 + (i % 2) * 0.012, [PAINT.leafDeep, PAINT.leaf], { at: [-0.44 + Math.cos(i * 1.3) * 0.04, top + 0.1 + (i % 3) * 0.03, -1.17 + Math.sin(i * 1.3) * 0.03], scale: [1, 0.6, 1] }, 0.3, i, 1))
+
+  // A lamp on the window post over the table.
+  pieces.push(limb([0, F + 1.7, NORTH], [0, F + 1.74, NORTH + 0.14], 0.011, 0.011, PAINT.brass, 6), cyl(0.045, 0.085, 0.09, [PAINT.oat, PAINT.cream], { at: [0, F + 1.64, NORTH + 0.14] }, 10))
+  glow.push(blob(0.032, PAINT.lamp, { at: [0, F + 1.65, NORTH + 0.14] }, 0.02, 1, 1))
+
+  // What they travel with. An open suitcase on the west seat, half unpacked.
+  const sx = -(seat + 0.27)
+  pieces.push(roughen(box(0.46, 0.13, 0.62, [PAINT.leatherDeep, PAINT.leather], { at: [sx, F + 0.5, -0.74] }), 0.006, 31))
+  pieces.push(roughen(box(0.05, 0.6, 0.62, [PAINT.leatherDeep, PAINT.leather], { at: [sx - 0.2, F + 0.6, -0.74], rot: [0, 0, 0.16] }), 0.006, 32))
+  pieces.push(blob(0.13, [PAINT.cornflowerDeep, PAINT.cornflower], { at: [sx - 0.02, F + 0.63, -0.86], scale: [1.3, 0.4, 1.1] }, 0.25, 4, 1), blob(0.12, [PAINT.oat, PAINT.white], { at: [sx + 0.02, F + 0.63, -0.6], scale: [1.2, 0.4, 1.2] }, 0.25, 5, 1))
+  pieces.push(...tome(sx + 0.05, F + 0.67, -0.74, 0.2, 0.035, FADED[5], 0.4))
+  // A coat and a scarf over the back of the east seat.
+  pieces.push(roughen(box(0.07, 0.72, 0.46, [PAINT.pine, PAINT.moss], { at: [seat + 0.41, F + 0.58, -0.66], rot: [0, 0, -0.05] }), 0.016, 41))
+  pieces.push(limb([seat + 0.38, F + 1.24, -0.5], [seat + 0.36, F + 0.74, -0.44], 0.045, 0.04, [PAINT.terracottaDeep, PAINT.terracotta], 6))
+  // A trunk and a hat box up on the rack.
+  pieces.push(roughen(box(0.78, 0.3, 0.36, [PAINT.walnut, PAINT.woodLight], { at: [-0.75, CAR.lintel + 0.09, -1.05] }), 0.008, 51), box(0.8, 0.03, 0.38, PAINT.brass, { at: [-0.75, CAR.lintel + 0.2, -1.05] }))
+  pieces.push(cyl(0.2, 0.2, 0.22, [PAINT.tealTinDeep, PAINT.tealTin], { at: [0.7, CAR.lintel + 0.09, -1.05] }, 12), cyl(0.21, 0.21, 0.04, PAINT.tealTinDeep, { at: [0.7, CAR.lintel + 0.29, -1.05] }, 12))
+  // A rug between the seats.
+  pieces.push(slab(-seat + 0.04, seat - 0.04, F + 0.001, F + 0.012, NORTH + 0.1, -0.3, [PAINT.rug, PAINT.terracottaDeep]), slab(-seat + 0.1, seat - 0.1, F + 0.012, F + 0.016, NORTH + 0.16, -0.36, [PAINT.terracottaDeep, PAINT.terracotta]))
+
+  // One ticket, for the app to tuck along the window frame: a pale card with a coloured stub.
+  const ticket = [box(0.15, 0.085, 0.004, [PAINT.oat, PAINT.white], { at: [0, 0, 0] }), box(0.034, 0.085, 0.005, PAINT.terracotta, { at: [-0.058, 0, 0] })]
+
+  return [part('Compartment_Fittings', pieces), part('Compartment_Glow', glow, 'glow'), hung('Ticket', ticket, [0, 0, 0])]
 }
 
-/** A brass-framed chart hung from the roof on two chains. */
-function chart(x: number, y: number, z: number, yaw: number, w: number, h: number, seed: number): BufferGeometry[] {
-  const random = seeded(seed)
-  const pieces = [box(w, h, 0.03, [PAINT.oat, PAINT.cream], { at: [0, -h / 2, 0] })]
-  for (const side of [-1, 1]) pieces.push(box(0.07, h + 0.14, 0.06, PAINT.brass, { at: [side * (w / 2 + 0.02), -h / 2 - 0.07, 0] }), box(0.02, TOWER.height - y - h / 2, 0.02, PAINT.iron, { at: [side * (w / 2 - 0.2), h / 2 + 0.05, 0] }))
-  for (const end of [-1, 1]) pieces.push(box(w + 0.18, 0.07, 0.06, PAINT.brass, { at: [0, end * (h / 2 + 0.02) - 0.035, 0] }))
-  // Coastlines and soundings, in brown ink.
-  for (let i = 0; i < 3; i++) pieces.push(ring(0.18 + i * 0.16 + random() * 0.05, 0.012, PAINT.walnut, { at: [(random() - 0.5) * w * 0.35, (random() - 0.5) * h * 0.3, 0.02], scale: [1.3, 0.8, 1] }, 14))
-  for (let i = 0; i < 5; i++) pieces.push(box(w * (0.2 + random() * 0.4), 0.012, 0.004, PAINT.walnut, { at: [(random() - 0.5) * w * 0.4, -h / 2 + 0.2 + i * (h - 0.4) * 0.22, 0.018], rot: [0, 0, (random() - 0.5) * 0.5] }))
-  return pieces.map((piece) => put(piece, { at: [x, y, z], rot: [0, yaw, 0] }))
+// ------------------------------------------------------------ the mail car
+
+/** A parcel done up in brown paper and string. */
+function parcel(x: number, y: number, z: number, w: number, h: number, d: number, turn: number): BufferGeometry[] {
+  return [
+    roughen(box(w, h, d, [PAINT.pathEdge, PAINT.path], { at: [x, y, z], rot: [0, turn, 0] }), 0.006, Math.round(x * 13 + z * 7)),
+    box(w + 0.006, h + 0.006, 0.014, PAINT.bleachedLight, { at: [x, y - 0.003, z], rot: [0, turn, 0] }),
+    box(0.014, h + 0.006, d + 0.006, PAINT.bleachedLight, { at: [x, y - 0.003, z], rot: [0, turn, 0] }),
+  ]
 }
 
 /**
- * The archive in the clocktower: eight stone walls, one of them a clock face
- * of glass that the afternoon comes in through; charts hanging from the
- * roof, armchairs that do not match, and a drafting table in the middle.
+ * The travelling post office: a sorting frame of pigeonholes over a desk
+ * where the north benches were, sacks and parcels round it, and a brass slot
+ * for whatever is ready to go.
  */
-export function buildTower(): Part[] {
-  const A = TOWER.apothem
-  const H = TOWER.height
-  const W = 2 * A * Math.tan(Math.PI / 8) + 0.5
-  const { y: clockY, radius: clockR } = TOWER.clock
-  const stone = [PAINT.stoneDark, PAINT.stone] as const
-  const random = seeded(606)
-  const room: BufferGeometry[] = []
+export function buildMail(): Part[] {
+  const F = CAR.floor
+  const random = seeded(47)
+  const { west, east, desk, rows, columns, shelf, depth } = MAIL
+  const frame: BufferGeometry[] = []
+  const fittings: BufferGeometry[] = []
   const glow: BufferGeometry[] = []
 
-  // Seven plain walls and the eighth with the hole for the clock.
-  for (let k = 1; k < 8; k++) {
-    const angle = (k / 8) * Math.PI * 2
-    room.push(roughen(box(W, H, 0.7, stone, { at: [Math.sin(angle) * (A + 0.35), 0, Math.cos(angle) * (A + 0.35)], rot: [0, angle, 0] }), 0.04, k))
-    // A band of timber round the room at head height, and a few stones standing proud.
-    room.push(box(W, 0.26, 0.2, PAINT.walnutDeep, { at: [Math.sin(angle) * (A - 0.08), 4.6, Math.cos(angle) * (A - 0.08)], rot: [0, angle, 0] }))
-    for (let i = 0; i < 5; i++) {
-      const along = (random() - 0.5) * (W - 1.6)
-      room.push(roughen(box(0.9 + random() * 0.7, 0.5, 0.2, i % 2 ? PAINT.stoneLight : PAINT.stoneDark, { at: [Math.sin(angle) * (A - 0.02) + Math.cos(angle) * along, 0.6 + random() * (H - 2), Math.cos(angle) * (A - 0.02) - Math.sin(angle) * along], rot: [0, angle, 0] }), 0.03, k * 10 + i))
+  // The desk: a deep top on a carcass of drawers.
+  frame.push(slab(west, east, F, F + desk - 0.04, NORTH, -0.78, walnut))
+  frame.push(roughen(slab(west - 0.03, east + 0.03, F + desk - 0.04, F + desk, NORTH, MAIL.front, [PAINT.walnut, PAINT.walnutLight]), 0.003, 2))
+  const drawer = (east - west) / 4
+  for (let column = 0; column < 4; column++) {
+    for (let row = 0; row < 2; row++) {
+      const x = west + drawer * (column + 0.5)
+      const y = F + 0.08 + row * 0.34
+      frame.push(box(drawer - 0.05, 0.3, 0.02, [PAINT.walnut, PAINT.walnutLight], { at: [x, y, -0.77] }), box(0.12, 0.018, 0.02, PAINT.brass, { at: [x, y + 0.14, -0.755] }))
     }
   }
-  room.push(
-    roughen(
-      extrude(
-        [
-          [-W / 2, 0],
-          [W / 2, 0],
-          [W / 2, H],
-          [-W / 2, H],
-        ],
-        0.7,
-        stone,
-        { at: [0, 0, A + 0.35] },
-        [0, clockY, clockR],
-      ),
-      0.03,
-      77,
-    ),
-  )
-  // Floor of broad boards, and a roof of dark beams.
-  for (let i = 0; i < 20; i++) room.push(slab(-A - 0.4 + i * ((A * 2 + 0.8) / 20), -A - 0.4 + (i + 1) * ((A * 2 + 0.8) / 20) - 0.03, -0.2, 0, -A - 0.4, A + 0.4, i % 2 ? PAINT.walnut : PAINT.walnutLight))
-  room.push(slab(-A - 0.6, A + 0.6, H, H + 0.4, -A - 0.6, A + 0.6, PAINT.walnutDeep))
-  for (const x of [-5, 0, 5]) room.push(slab(x - 0.2, x + 0.2, H - 0.5, H, -A, A, walnut))
-  for (const z of [-5, 5]) room.push(slab(-A, A, H - 0.8, H - 0.5, z - 0.16, z + 0.16, walnut))
+  // The board behind the desk, with the slot in it.
+  frame.push(slab(west, east, F + desk, F + shelf, NORTH, NORTH + 0.03, [PAINT.pine, PAINT.moss]))
+  const [slotX, slotY] = MAIL.slot
+  frame.push(box(0.4, 0.09, 0.012, PAINT.brass, { at: [slotX, F + slotY - 0.045, NORTH + 0.036] }), box(0.3, 0.022, 0.006, PAINT.soot, { at: [slotX, F + slotY - 0.011, NORTH + 0.044] }))
 
-  // The clock: an iron rim, an inner ring, twelve marks, and the works behind it.
-  const face = A + 0.02
-  room.push(ring(clockR + 0.04, 0.17, PAINT.iron, { at: [0, clockY, face] }, 32), ring(clockR * 0.76, 0.06, PAINT.iron, { at: [0, clockY, face] }, 28), cyl(0.3, 0.3, 0.3, PAINT.brass, { at: [0, clockY, face - 0.15], rot: [QUARTER, 0, 0] }, 12))
-  for (let i = 0; i < 12; i++) {
-    const angle = (i / 12) * Math.PI * 2
-    const long = i % 3 === 0
-    room.push(box(long ? 0.16 : 0.09, long ? 0.7 : 0.42, 0.06, PAINT.iron, { at: [Math.sin(angle) * (clockR * 0.88), clockY + Math.cos(angle) * (clockR * 0.88) - (long ? 0.35 : 0.21) * Math.cos(angle), face], rot: [0, 0, -angle] }))
-  }
-  const glass = [cyl(clockR, clockR, 0.04, [PAINT.amberLight, PAINT.cream], { at: [0, clockY, A + 0.3], rot: [QUARTER, 0, 0] }, 32)]
-  const hour = [box(0.2, clockR * 0.5, 0.05, PAINT.iron, { at: [0, -0.2, 0] }), cone(0.2, 0.36, PAINT.iron, { at: [0, clockR * 0.5 - 0.2, 0] }, 4)]
-  const minute = [box(0.13, clockR * 0.8, 0.05, PAINT.iron, { at: [0, -0.3, 0] }), cone(0.14, 0.3, PAINT.iron, { at: [0, clockR * 0.8 - 0.3, 0] }, 4)]
-  const pendulum = [box(0.07, 5.2, 0.05, PAINT.brass, { at: [0, -5.2, 0] }), cyl(0.5, 0.5, 0.1, [PAINT.brass, PAINT.gold], { at: [0, -5.3, -0.05], rot: [QUARTER, 0, 0] }, 18)]
-  room.push(box(1.2, 0.3, 0.6, PAINT.iron, { at: [TOWER.pendulum[0], TOWER.pendulum[1], TOWER.pendulum[2]] }))
-
-  // Bookshelves on the two side walls.
-  for (const side of [-1, 1]) {
-    const x = side * (A - 0.5)
-    const unit: BufferGeometry[] = [box(5.4, 6.4, 0.1, PAINT.walnutDeep, { at: [0, 0, -0.3] })]
-    for (const end of [-2.7, 2.7]) unit.push(box(0.12, 6.4, 0.7, walnut, { at: [end, 0, 0] }))
-    for (let y = 0.1; y < 6.2; y += 1.02) {
-      unit.push(box(5.4, 0.07, 0.7, PAINT.walnutLight, { at: [0, y, 0] }))
-      if (y < 5.5) unit.push(...bookRow(-2.6, 2.6, y + 0.07, 0.02, 0.8, 0.88, random))
+  // The pigeonholes.
+  const cell = (east - west) / columns
+  const rise = (MAIL.top - shelf) / rows
+  frame.push(slab(west, east, F + shelf, F + MAIL.top, NORTH, NORTH + 0.02, PAINT.walnutDeep))
+  for (let column = 0; column <= columns; column++) frame.push(slab(west + column * cell - 0.012, west + column * cell + 0.012, F + shelf, F + MAIL.top, NORTH, NORTH + depth, walnut))
+  for (let row = 0; row <= rows; row++) frame.push(slab(west - 0.012, east + 0.012, F + shelf + row * rise - 0.012, F + shelf + row * rise + 0.012, NORTH, NORTH + depth + (row === 0 ? 0.03 : 0), [PAINT.walnut, PAINT.walnutLight]))
+  frame.push(slab(west - 0.04, east + 0.04, F + MAIL.top + 0.012, F + MAIL.top + 0.05, NORTH, NORTH + depth + 0.03, [PAINT.walnut, PAINT.walnutLight]))
+  // Letters in most of them, bundled and leaning.
+  const envelope = [PAINT.white, PAINT.oat, PAINT.cream, PAINT.bleachedLight, PAINT.mist, PAINT.cornflower]
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      const x0 = west + column * cell + 0.03
+      const y = F + shelf + row * rise + 0.012
+      for (let x = x0, n = 2 + Math.floor(random() * 9); n > 0 && x < x0 + cell - 0.07; n--) {
+        const thick = 0.008 + random() * 0.02
+        const colour = envelope[Math.floor(random() * envelope.length)]
+        fittings.push(box(thick, rise * (0.5 + random() * 0.32), 0.2, [colour, colour], { at: [x + thick / 2, y, NORTH + 0.14], rot: [0, 0, (random() - 0.5) * 0.18] }))
+        x += thick + 0.006 + random() * 0.012
+      }
     }
-    room.push(...unit.map((piece) => put(piece, { at: [x, 0, -0.5], rot: [0, -side * QUARTER, 0] })))
   }
+  // Four of them have a brass plate: the app writes a name on each.
+  for (const [column, row] of MAIL.named) frame.push(box(cell - 0.07, 0.05, 0.008, PAINT.brass, { at: [west + (column + 0.5) * cell, F + shelf + row * rise - 0.025, NORTH + depth + 0.012] }))
 
-  // Charts hung from the roof, at every height and angle.
-  room.push(...chart(-4.6, 8.6, 1.5, 0.5, 2.6, 1.8, 1), ...chart(4.2, 9.6, 2.6, -0.4, 2.2, 2.6, 2), ...chart(-2.4, 10.6, -3.4, 0.2, 3, 1.9, 3), ...chart(3.6, 7.8, -3.6, -0.7, 2.1, 1.5, 4), ...chart(-5.6, 6.6, -3, 1.0, 1.8, 2.3, 5), ...chart(0.6, 11.4, 4.2, 0.1, 2.4, 1.6, 6))
+  // On the desk: an oil lamp, scales, a stamp and its pad, letters tied in a bundle, a pen.
+  const top = F + desk
+  fittings.push(cyl(0.06, 0.075, 0.05, PAINT.brass, { at: [-1.05, top, -1.05] }, 10), cyl(0.03, 0.045, 0.05, PAINT.brass, { at: [-1.05, top + 0.05, -1.05] }, 8), cyl(0.028, 0.05, 0.16, [PAINT.mist, PAINT.white], { at: [-1.05, top + 0.1, -1.05] }, 8))
+  glow.push(blob(0.03, PAINT.lamp, { at: [-1.05, top + 0.15, -1.05], scale: [1, 1.6, 1] }, 0.02, 1, 1))
+  fittings.push(cyl(0.09, 0.11, 0.03, PAINT.brass, { at: [0.95, top, -1.08] }, 10), cyl(0.012, 0.012, 0.24, PAINT.brass, { at: [0.95, top + 0.03, -1.08] }, 6), box(0.36, 0.014, 0.014, PAINT.brass, { at: [0.95, top + 0.26, -1.08] }))
+  for (const side of [-1, 1]) fittings.push(cyl(0.07, 0.05, 0.014, PAINT.brass, { at: [0.95 + side * 0.17, top + 0.13 + side * 0.02, -1.08] }, 10), cyl(0.003, 0.003, 0.13 - side * 0.02, PAINT.iron, { at: [0.95 + side * 0.17, top + 0.14 + side * 0.02, -1.08] }, 4))
+  fittings.push(box(0.14, 0.022, 0.09, PAINT.soot, { at: [0.45, top, -0.86] }), box(0.12, 0.006, 0.07, PAINT.rug, { at: [0.45, top + 0.022, -0.86] }))
+  fittings.push(cyl(0.022, 0.03, 0.035, PAINT.brass, { at: [0.62, top, -0.92] }, 8), cyl(0.014, 0.014, 0.06, walnut, { at: [0.62, top + 0.035, -0.92] }, 6), blob(0.022, PAINT.walnut, { at: [0.62, top + 0.1, -0.92] }, 0.02, 1, 1))
+  let stack = top
+  for (let i = 0; i < 6; i++) {
+    fittings.push(box(0.22, 0.008, 0.13, i % 2 ? PAINT.oat : PAINT.white, { at: [-0.55 + (random() - 0.5) * 0.012, stack, -0.92], rot: [0, 0.2 + (random() - 0.5) * 0.08, 0] }))
+    stack += 0.008
+  }
+  fittings.push(box(0.012, 0.052, 0.14, PAINT.terracotta, { at: [-0.55, top - 0.002, -0.92], rot: [0, 0.2, 0] }))
+  fittings.push(limb([0.2, top + 0.006, -0.8], [0.34, top + 0.006, -0.9], 0.005, 0.004, PAINT.soot, 5))
 
-  // Armchairs that were never a set, each with something beside it.
-  room.push(...armchair(-4.4, 2.3, 2.2, [PAINT.wine, PAINT.wineLight], true), ...armchair(-5.4, -0.6, 1.5, [PAINT.moss, PAINT.mossLight], false), ...armchair(4.6, 1.6, -2.3, [PAINT.amberDeep, PAINT.honey], false), ...armchair(4.9, -2.9, -1.2, [PAINT.cornflowerDeep, PAINT.cornflower], true))
-  room.push(cyl(0.34, 0.3, 0.52, walnut, { at: [-5.6, 0, 1.1] }, 9), ...tome(-5.6, 0.52, 1.1, 0.5, 0.1, PAINT.rug, 0.4), cyl(0.34, 0.3, 0.52, walnut, { at: [5.7, 0, -0.6] }, 9))
-  room.push(cyl(0.05, 0.07, 1.5, PAINT.brass, { at: [TOWER.lamp[0], 0, TOWER.lamp[2]] }, 6), cyl(0.15, 0.32, 0.34, [PAINT.oat, PAINT.cream], { at: [TOWER.lamp[0], 1.46, TOWER.lamp[2]] }, 10))
-  glow.push(blob(0.11, PAINT.lamp, { at: [TOWER.lamp[0], 1.55, TOWER.lamp[2]] }, 0.02, 1, 1))
-  // Rugs, laid over one another.
-  room.push(cyl(4.6, 4.6, 0.02, [PAINT.wine, PAINT.wine], { at: [0, 0, -0.4] }, 28), ring(4.2, 0.07, PAINT.brass, { at: [0, 0.025, -0.4], rot: [QUARTER, 0, 0], scale: [1, 1, 0.2] }, 28), ring(3.1, 0.05, PAINT.honey, { at: [0, 0.025, -0.4], rot: [QUARTER, 0, 0], scale: [1, 1, 0.2] }, 24))
-  room.push(box(2.6, 0.02, 1.6, [PAINT.moss, PAINT.pine], { at: [-4.8, 0.01, 1], rot: [0, 0.5, 0] }))
-
-  // The drafting table, and everything that has been put down on it.
-  const [tx, ty, tz] = TOWER.table
-  room.push(roughen(box(3.5, 0.09, 2.1, [PAINT.walnut, PAINT.walnutLight], { at: [tx, ty - 0.09, tz] }), 0.01, 9))
-  for (const sx of [-1.4, 1.4]) room.push(limb([tx + sx, 0, tz + 0.8], [tx + sx, ty - 0.1, tz - 0.5], 0.06, 0.05, PAINT.walnutDeep, 6), limb([tx + sx, 0, tz - 0.8], [tx + sx, ty - 0.1, tz + 0.5], 0.06, 0.05, PAINT.walnutDeep, 6))
-  room.push(cyl(0.06, 0.06, 1.3, [PAINT.oat, PAINT.white], { at: [tx + 0.5, ty + 0.06, tz - 0.7], rot: [0, 0.3, QUARTER] }, 7), cyl(0.05, 0.05, 1.0, PAINT.blueprintLight, { at: [tx + 0.9, ty + 0.05, tz - 0.4], rot: [0, -0.4, QUARTER] }, 7), cyl(0.055, 0.055, 0.9, PAINT.cream, { at: [tx - 0.1, ty + 0.055, tz - 0.85], rot: [0, 0.1, QUARTER] }, 7))
-  room.push(...tome(tx + 1.15, ty, tz + 0.55, 0.55, 0.12, PAINT.moss, 0.3), ...tome(tx + 1.18, ty + 0.12, tz + 0.52, 0.46, 0.1, PAINT.rug, -0.4), ...tome(tx - 1.35, ty, tz + 0.6, 0.5, 0.1, PAINT.cornflowerDeep, 1.1))
-  room.push(box(1.3, 0.008, 0.9, [PAINT.blueprint, PAINT.blueprintLight], { at: [tx + 0.7, ty, tz + 0.1], rot: [0, -0.25, 0] }), ring(0.2, 0.01, PAINT.white, { at: [tx + 0.7, ty + 0.012, tz + 0.1], rot: [QUARTER, 0, 0] }, 14))
-  room.push(cyl(0.07, 0.085, 0.09, PAINT.ink, { at: [tx - 1.2, ty, tz - 0.3] }, 8), cyl(0.045, 0.045, 0.02, PAINT.brass, { at: [tx - 1.2, ty + 0.09, tz - 0.3] }, 8))
-  room.push(ring(0.14, 0.014, PAINT.brass, { at: [tx + 0.2, ty + 0.014, tz + 0.75], rot: [QUARTER, 0, 0] }, 14), box(0.9, 0.012, 0.07, PAINT.woodPale, { at: [tx - 0.5, ty, tz + 0.82], rot: [0, 0.2, 0] }))
-  room.push(cyl(0.085, 0.07, 0.15, [PAINT.terracottaDeep, PAINT.terracotta], { at: [tx + 1.45, ty, tz - 0.6] }, 10), ring(0.05, 0.012, PAINT.terracotta, { at: [tx + 1.56, ty + 0.08, tz - 0.6] }, 8))
-  room.push(cyl(0.035, 0.04, 0.16, PAINT.cream, { at: [tx - 1.5, ty, tz - 0.75] }, 6), cyl(0.07, 0.07, 0.015, PAINT.brass, { at: [tx - 1.5, ty, tz - 0.75] }, 8))
-  glow.push(cone(0.022, 0.07, [PAINT.flame, PAINT.flameCore], { at: [tx - 1.5, ty + 0.16, tz - 0.75] }, 5))
-  // A globe, a trunk, and piles of books wherever there was floor.
-  room.push(limb([-2.6, 0, -4.8], [-2.6, 0.9, -4.8], 0.06, 0.035, PAINT.brass, 6), blob(0.42, [PAINT.cornflowerDeep, PAINT.mist], { at: [-2.6, 1.25, -4.8] }, 0.02, 1), ring(0.48, 0.02, PAINT.brass, { at: [-2.6, 1.25, -4.8], rot: [0, 0.6, 0.4] }, 18))
-  room.push(roughen(box(1.3, 0.62, 0.74, [PAINT.leatherDeep, PAINT.leather], { at: [2.4, 0, -5.2], rot: [0, -0.3, 0] }), 0.012, 4))
-  for (const [px, pz, count] of [
-    [-2.2, 2.6, 6],
-    [2.4, 3.2, 4],
-    [-6.4, -3.6, 5],
-    [6.3, 3.4, 5],
-    [1.2, -4.2, 3],
-    [-1.1, 4.4, 4],
+  // Sacks on the floor, and parcels wherever there is room for them.
+  for (const [x, z, size, seed] of [
+    [-1.95, -0.88, 0.3, 1],
+    [-2.42, -1.0, 0.34, 2],
+    [-2.2, -0.62, 0.26, 3],
+    [1.95, -0.92, 0.32, 4],
   ] as const) {
-    let y = 0.03
-    for (let i = 0; i < count; i++) {
-      const thickness = 0.09 + random() * 0.07
-      room.push(...tome(px + (random() - 0.5) * 0.12, y, pz + (random() - 0.5) * 0.12, 0.5 + random() * 0.16, thickness, BINDINGS[Math.floor(random() * BINDINGS.length)], (random() - 0.5) * 0.9))
-      y += thickness
-    }
+    fittings.push(blob(size, [PAINT.bleachedDark, PAINT.bleachedLight], { at: [x, F + size * 0.92, z], scale: [0.95, 1.25, 0.95] }, 0.16, seed, 2))
+    fittings.push(cyl(size * 0.2, size * 0.34, size * 0.3, [PAINT.bleachedDark, PAINT.bleached], { at: [x + size * 0.1, F + size * 1.95, z] }, 7), ring(size * 0.26, 0.012, PAINT.woodDark, { at: [x + size * 0.07, F + size * 1.98, z], rot: [QUARTER, 0, 0] }, 8))
   }
-
-  // The afternoon, coming through the clock in bars: brightest at the glass, spent by the floor.
-  const beams: BufferGeometry[] = []
-  const reach = 13
-  for (const x of [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]) {
-    const tall = 2 * Math.sqrt(clockR * clockR - x * x) * 0.8
-    const beam = box(0.62, tall, reach, [PAINT.soot, PAINT.soot], { at: [x, clockY - 0.25 * reach - tall / 2 + 0.1, A - 0.433 * reach], rot: [-Math.PI / 6, 0, 0] })
-    const points = beam.getAttribute('position')
-    const shade = beam.getAttribute('color')
-    for (let i = 0; i < points.count; i++) {
-      const spent = Math.min(1, Math.max(0, (A - points.getZ(i)) / (0.866 * reach)))
-      const light = 0.13 * (1 - spent) * (1 - spent)
-      shade.setXYZ(i, light, light * 0.78, light * 0.42)
-    }
-    beams.push(beam)
-  }
-
-  // The open sketchpad: wire-bound along its top, a page half drawn, the pencil beside it.
-  const pad: BufferGeometry[] = [box(1.16, 0.03, 0.84, PAINT.walnutDeep, { at: [0, 0, 0] }), box(1.1, 0.035, 0.78, [PAINT.oat, PAINT.white], { at: [0, 0.03, 0] })]
-  for (let i = 0; i < 11; i++) pad.push(ring(0.03, 0.007, PAINT.steel, { at: [-0.5 + i * 0.1, 0.05, -0.4], rot: [0, QUARTER, 0] }, 8))
-  for (let line = 0; line < 6; line++) pad.push(box(0.5 - (line % 3) * 0.08, 0.003, 0.012, PAINT.ink, { at: [-0.22 - (line % 3) * 0.04, 0.067, -0.2 + line * 0.085] }))
-  pad.push(ring(0.14, 0.006, PAINT.ink, { at: [0.3, 0.068, -0.08], rot: [QUARTER, 0, 0] }, 14), box(0.3, 0.003, 0.008, PAINT.ink, { at: [0.3, 0.067, 0.16], rot: [0, 0.4, 0] }), box(0.26, 0.003, 0.008, PAINT.ink, { at: [0.32, 0.067, 0.2], rot: [0, -0.3, 0] }))
-  pad.push(limb([0.7, 0.03, 0.3], [0.86, 0.03, -0.2], 0.014, 0.014, PAINT.honey, 6), limb([0.86, 0.03, -0.2], [0.88, 0.03, -0.27], 0.014, 0.002, PAINT.woodPale, 5))
-
-  return [
-    part('Tower_Room', room),
-    part('Tower_Glass', glass, 'glass'),
-    part('Tower_Glow', glow, 'glow'),
-    part('Tower_Beams', beams, 'light'),
-    part('Tower_Gear', gear(14)),
-    hung('Tower_Hour', hour, [0, clockY, A + 0.08]),
-    hung('Tower_Minute', minute, [0, clockY, A + 0.14]),
-    hung('Tower_Pendulum', pendulum, TOWER.pendulum),
-    hung('Tower_Pad', pad, TOWER.pad),
-  ]
-}
-
-// ------------------------------------------------------------ the coastal signpost
-
-const paint = Object.fromEntries(Object.entries(PAINT).map(([name, hex]) => [name, new Color(hex)])) as Record<keyof typeof PAINT, Color>
-const stroke = new Color()
-
-/** The shore the signpost stands on: one sweep of meadow going down to sand and into the sea. */
-function buildShore(): BufferGeometry {
-  const across = 110
-  const down = 60
-  const x0 = -84
-  const x1 = 84
-  const z0 = -14
-  const z1 = 60
-  const positions = new Float32Array((across + 1) * (down + 1) * 3)
-  const colors = new Float32Array((across + 1) * (down + 1) * 3)
-  for (let j = 0; j <= down; j++) {
-    for (let i = 0; i <= across; i++) {
-      const x = x0 + ((x1 - x0) * i) / across
-      // Finer near the water, where the camera is; coarser inland.
-      const t = j / down
-      const z = z0 + (z1 - z0) * t * t
-      const h = shoreHeight(x, z)
-      const o = (j * (across + 1) + i) * 3
-      positions.set([x, h, z], o)
-      const sun = valueNoise(x * 0.05 + 30, z * 0.05 - 12)
-      stroke.copy(paint.mossLight).lerp(paint.clover, sun).lerp(paint.sunlit, Math.max(0, sun - 0.55) * 1.2)
-      stroke.lerp(paint.sand, 1 - Math.min(1, Math.max(0, (h - 0.1) / 0.5)))
-      stroke.lerp(paint.stoneDark, 1 - Math.min(1, Math.max(0, (h + 1.2) / 0.9)))
-      stroke.multiplyScalar(0.94 + valueNoise(x * 1.9, z * 1.9) * 0.12)
-      colors.set([stroke.r, stroke.g, stroke.b], o)
-    }
-  }
-  const index: number[] = []
-  for (let j = 0; j < down; j++) {
-    for (let i = 0; i < across; i++) {
-      const a = j * (across + 1) + i
-      index.push(a, a + across + 1, a + 1, a + 1, a + across + 1, a + across + 2)
-    }
-  }
-  const geometry = new BufferGeometry()
-  geometry.setAttribute('position', new BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new BufferAttribute(colors, 3))
-  geometry.setIndex(index)
-  geometry.computeVertexNormals()
-  return geometry
-}
-
-/** The shore, the post with its four plaques, and one dandelion clock for the app to sow across the field. */
-export function buildCoast(): Part[] {
-  const grey = [PAINT.bleachedDark, PAINT.bleached] as const
-  const post = [
-    roughen(cyl(0.13, 0.2, 3.9, grey, { at: [0, -0.3, 0], rot: [0.03, 0, -0.045] }, 7), 0.02, 3),
-    cone(0.17, 0.24, PAINT.bleachedLight, { at: [-0.16, 3.58, 0.1] }, 7),
-    blob(0.34, [PAINT.stoneDark, PAINT.stoneLight], { at: [0.3, 0.05, 0.22], scale: [1.2, 0.6, 1] }, 0.3, 4, 1),
-    blob(0.24, [PAINT.stoneDark, PAINT.stone], { at: [-0.3, 0.03, -0.1], scale: [1, 0.6, 1.2] }, 0.3, 5, 1),
-    // Lichen, and grass grown up round its foot.
-    blob(0.12, PAINT.verdigris, { at: [0.1, 1.2, 0.14], scale: [1, 1.4, 0.3] }, 0.3, 6, 1),
-    blob(0.1, PAINT.sunlit, { at: [-0.12, 2.3, 0.12], scale: [1, 1.2, 0.3] }, 0.3, 7, 1),
-  ]
-  for (let i = 0; i < 7; i++) post.push(cone(0.05, 0.5 + (i % 3) * 0.16, [PAINT.mossLight, PAINT.sunlit], { at: [Math.cos(i * 0.9) * 0.3, 0, Math.sin(i * 0.9) * 0.3], rot: [Math.sin(i) * 0.25, 0, Math.cos(i) * 0.25] }, 4))
-
-  const { length, height, thickness, inset } = PLAQUE
-  const plaques = PLAQUES.map(({ height: y, side, yaw }, i) => {
-    const tone = i % 2 ? PAINT.bleachedLight : PAINT.woodPale
-    const pieces = [
-      box(length, height, thickness, [PAINT.bleachedDark, tone], { at: [side * (inset + length / 2), -height / 2, 0] }),
-      // The pointed end: a square board turned on its corner.
-      box(height / Math.SQRT2, height / Math.SQRT2, thickness, tone, { at: [side * (inset + length) + height / 4, -height / 4, 0], rot: [0, 0, QUARTER / 2] }),
-      cyl(0.025, 0.025, 0.03, PAINT.iron, { at: [side * 0.3, -0.1, thickness / 2], rot: [QUARTER, 0, 0] }, 6),
-      cyl(0.025, 0.025, 0.03, PAINT.iron, { at: [side * 0.3, 0.1, thickness / 2], rot: [QUARTER, 0, 0] }, 6),
-    ]
-    for (const piece of pieces) put(roughen(piece, 0.014, i), { rot: [0, yaw, side * (0.02 + i * 0.012)] })
-    return hung(`Signpost_Plaque${i + 1}`, pieces, [-0.045 * y, y, 0.02])
-  })
-
-  // One dandelion gone to seed: a thin stalk and a ball of down.
-  const dandelion = [limb([0, 0, 0], [0.03, 0.46, 0], 0.012, 0.008, [PAINT.mossLight, PAINT.sunlit], 4), blob(0.07, [PAINT.cream, PAINT.dandelion], { at: [0.03, 0.5, 0] }, 0.14, 2, 2), blob(0.03, PAINT.woodPale, { at: [0.03, 0.5, 0] }, 0.1, 3, 1)]
-
-  const random = seeded(52)
-  const rocks: BufferGeometry[] = []
-  for (let i = 0; i < 9; i++) {
-    const x = (random() * 2 - 1) * 30
-    const z = -4 + random() * 3
-    const size = 0.3 + random() * 0.6
-    rocks.push(blob(size, [PAINT.stoneDark, PAINT.stoneLight], { at: [x, Math.max(-0.2, shoreHeight(x, z)) + size * 0.2, z], scale: [1.3, 0.6, 1], rot: [0, random() * 6, 0] }, 0.3, i, 1))
-  }
-
-  return [{ name: 'Coast_Land', geometry: buildShore(), material: 'paint' }, part('Coast_Rocks', rocks), part('Signpost_Post', post), ...plaques, part('Dandelion', dandelion)]
-}
-
-// ------------------------------------------------------------ the bus stop shelter
-
-/** The lonely bus stop: a shelter with a lantern, a telephone box that glows, and a pole with four planks nailed to it. */
-export function buildBusStop(): Part[] {
-  const G = STOP.ground
-  const weathered = [PAINT.bleachedDark, PAINT.bleached] as const
-  const random = seeded(909)
-
-  // The shore it stands on: gravel, a kerb of stones along the water, rough grass behind.
-  const ground: BufferGeometry[] = [slab(-16, 16, -2, G, -12, 1.2, [PAINT.stoneDark, PAINT.cobble]), slab(-16, 16, G, G + 0.03, -12, -5.2, [PAINT.moss, PAINT.mossLight])]
-  for (let x = -15.5; x < 15.8; x += 0.9 + random() * 0.5) ground.push(blob(0.3 + random() * 0.22, [PAINT.stoneDark, PAINT.stoneLight], { at: [x, G - 0.05, 1.2 + (random() - 0.5) * 0.3], scale: [1.2, 0.7, 1] }, 0.3, Math.round(x * 3), 1))
-  for (let i = 0; i < 40; i++) {
-    const x = (random() * 2 - 1) * 15
-    const z = -5.4 - random() * 6
-    ground.push(cone(0.06, 0.5 + random() * 0.6, [PAINT.moss, PAINT.clover], { at: [x, G, z], rot: [(random() - 0.5) * 0.4, 0, (random() - 0.5) * 0.4] }, 4))
-  }
-  for (const x of [-7.5, 8.2]) ground.push(roughen(cyl(0.13, 0.16, 1.5, weathered, { at: [x, G - 0.3, 0.9], rot: [0, 0, 0.04] }, 7), 0.012, Math.round(x)))
-
-  // The shelter: three walls of weathered board, a lean-to roof, a bench.
-  const [sx, sz] = STOP.shelter
-  const shelter: BufferGeometry[] = []
-  for (const x of [-2.3, 2.3]) {
-    shelter.push(box(0.14, 2.6, 0.14, weathered, { at: [sx + x, G, sz + 0.95] }), box(0.14, 2.25, 0.14, weathered, { at: [sx + x, G, sz - 0.95] }))
-    for (let i = 0; i < 5; i++) shelter.push(roughen(box(0.06, 1.2, 0.36, i % 2 ? PAINT.bleached : PAINT.bleachedDark, { at: [sx + x, G + 0.1, sz - 0.76 + i * 0.38] }), 0.008, i))
-  }
-  for (let i = 0; i < 12; i++) shelter.push(roughen(box(0.37, 2.15, 0.06, i % 3 ? PAINT.bleached : PAINT.bleachedDark, { at: [sx - 2.1 + i * 0.382, G + 0.05, sz - 0.95] }), 0.008, 20 + i))
-  shelter.push(box(4.8, 0.12, 0.12, weathered, { at: [sx, G + 2.6, sz + 0.95] }), box(4.8, 0.1, 0.1, weathered, { at: [sx, G + 2.25, sz - 0.95] }))
-  for (let i = 0; i < 9; i++) shelter.push(roughen(box(0.6, 0.06, 2.9, i % 2 ? PAINT.roofGrey : PAINT.stoneDark, { at: [sx - 2.4 + i * 0.6, G + 2.5, sz], rot: [0.185, 0, 0] }), 0.012, 40 + i))
-  shelter.push(box(4.3, 0.09, 0.5, [PAINT.wood, PAINT.woodLight], { at: [sx, G + 0.5, sz - 0.6] }))
-  for (const x of [-1.9, 0, 1.9]) shelter.push(box(0.09, 0.5, 0.42, PAINT.woodDark, { at: [sx + x, G, sz - 0.6] }))
-  shelter.push(box(4.3, 0.34, 0.06, [PAINT.wood, PAINT.woodLight], { at: [sx, G + 0.86, sz - 0.86], rot: [-0.1, 0, 0] }))
-  // A timetable nobody has changed in years, and a suitcase somebody is coming back for.
-  shelter.push(box(1.1, 0.8, 0.04, [PAINT.oat, PAINT.cream], { at: [STOP.notice[0], G + STOP.notice[1] - 0.4, STOP.notice[2] - 0.02] }))
-  shelter.push(roughen(box(0.72, 0.46, 0.26, [PAINT.leatherDeep, PAINT.leather], { at: [sx + 1.4, G, sz - 0.1], rot: [0, 0.2, 0] }), 0.01, 60))
-
-  // The lantern, hung from the front beam.
-  const [lx, ly, lz] = STOP.lantern
-  shelter.push(box(0.016, 0.26, 0.016, PAINT.iron, { at: [lx, G + ly + 0.2, lz] }), box(0.26, 0.04, 0.26, PAINT.iron, { at: [lx, G + ly + 0.16, lz] }), cone(0.17, 0.12, PAINT.iron, { at: [lx, G + ly + 0.2, lz] }, 4), box(0.24, 0.03, 0.24, PAINT.iron, { at: [lx, G + ly - 0.17, lz] }))
-  for (const [cx, cz] of [
-    [0.1, 0.1],
-    [-0.1, 0.1],
-    [0.1, -0.1],
-    [-0.1, -0.1],
+  fittings.push(...lowRack(-4.0, -2.75), ...lowRack(2.45, 4.0))
+  for (const [x, y, z, w, h, d, turn] of [
+    [-3.55, 0.47, -1.05, 0.5, 0.3, 0.32, 0.1],
+    [-3.0, 0.47, -1.08, 0.34, 0.22, 0.26, -0.2],
+    [-3.5, 0.77, -1.06, 0.3, 0.16, 0.24, 0.5],
+    [-3.3, 0.06, -1.05, 0.6, 0.3, 0.3, 0],
+    [3.0, 0.47, -1.06, 0.44, 0.26, 0.3, -0.12],
+    [3.55, 0.47, -1.08, 0.3, 0.36, 0.26, 0.2],
+    [3.2, 0.06, -1.05, 0.7, 0.3, 0.3, 0.05],
+    [3.02, 0.73, -1.06, 0.26, 0.14, 0.2, 0.6],
+    [2.2, 0, -0.62, 0.44, 0.34, 0.36, 0.3],
+    [0.3, 0.47, 0.98, 0.4, 0.24, 0.3, 0.15],
   ] as const) {
-    shelter.push(box(0.018, 0.32, 0.018, PAINT.iron, { at: [lx + cx, G + ly - 0.16, lz + cz] }))
+    fittings.push(...parcel(x, F + y, z, w, h, d, turn))
   }
-  const glow = [box(0.19, 0.3, 0.19, PAINT.lamp, { at: [lx, G + ly - 0.14, lz] })]
 
-  // The telephone box.
-  const [bx, bz] = STOP.booth
-  const green = [PAINT.boothGreen, PAINT.boothGreenLight] as const
-  const booth: BufferGeometry[] = [box(1.3, 0.1, 1.3, PAINT.stoneDark, { at: [0, G - 0.02, 0] })]
-  for (const x of [-0.55, 0.55]) for (const z of [-0.55, 0.55]) booth.push(box(0.1, 2.4, 0.1, green, { at: [x, G + 0.06, z] }))
-  booth.push(box(1.24, 0.36, 1.24, green, { at: [0, G + 2.44, 0] }), box(1.36, 0.08, 1.36, PAINT.boothGreen, { at: [0, G + 2.8, 0] }), cyl(0.2, 0.6, 0.2, green, { at: [0, G + 2.88, 0] }, 4), box(1.04, 0.24, 0.02, PAINT.cream, { at: [0, G + 2.5, 0.62] }))
-  for (const y of [0.06, 1.0, 2.36]) {
-    booth.push(box(1.1, 0.08, 0.08, green, { at: [0, G + y, -0.55] }))
-    for (const x of [-0.55, 0.55]) booth.push(box(0.08, 0.08, 1.1, green, { at: [x, G + y, 0] }))
+  // The card on the desk, for the app to lift when it is pointed at.
+  const card = [box(0.31, 0.004, 0.2, [PAINT.oat, PAINT.white], { at: [0, 0, 0] }), box(0.004, 0.005, 0.16, PAINT.bleachedDark, { at: [0.02, 0, 0] }), box(0.05, 0.005, 0.06, PAINT.terracotta, { at: [0.115, 0, -0.055] })]
+
+  return [part('Mail_Frame', frame), part('Mail_Fittings', fittings), part('Mail_Glow', glow, 'glow'), hung('Mail_Card', card, [0, 0, 0])]
+}
+
+/** A low slatted rack under a window, two tiers, for parcels. */
+function lowRack(x0: number, x1: number): BufferGeometry[] {
+  const F = CAR.floor
+  const pieces: BufferGeometry[] = []
+  for (const x of [x0, x1 - 0.04]) for (const z of [NORTH + 0.02, -0.82]) pieces.push(slab(x, x + 0.04, F, F + 0.5, z, z + 0.04, walnut))
+  for (const y of [0.05, 0.46]) for (let i = 0; i < 4; i++) pieces.push(slab(x0, x1, F + y - 0.02, F + y, NORTH + 0.03 + i * 0.12, NORTH + 0.11 + i * 0.12, [PAINT.wood, PAINT.woodLight]))
+  return pieces
+}
+
+// ------------------------------------------------------------ the driver's cab
+
+/**
+ * The cab at the head of the train, built in the front car's own space and
+ * taking its front end: a windscreen in three panes over a desk of brass
+ * gauges and levers, a board over the glass for the destination, and the
+ * few things a driver keeps by them. Only its inside is ever seen.
+ */
+export function buildCab(): Part[] {
+  const F = CAR.floor
+  const W = CAR.halfWidth
+  const { back, front, sill, head, board } = CAB
+  const red = [PAINT.redDeep, PAINT.red] as const
+  const cream = [PAINT.oat, PAINT.cream] as const
+  const shell: BufferGeometry[] = []
+  const glass: BufferGeometry[] = []
+  const glow: BufferGeometry[] = []
+
+  // Floor and roof, as in the cars behind.
+  shell.push(slab(back, front, F - 0.1, F, -W, W, [PAINT.walnutDeep, PAINT.walnut]))
+  for (let i = 0; i < 9; i++) shell.push(slab(back + 0.1, front - 0.7, F, F + 0.004, -1.2 + i * 0.3 - 0.004, -1.2 + i * 0.3 + 0.004, PAINT.walnutDeep))
+  shell.push(slab(back, front, CAR.ceiling, CAR.ceiling + 0.05, -W, W, [PAINT.bleachedDark, PAINT.bleached]), slab(back - 0.1, front + 0.1, CAR.ceiling + 0.05, CAR.ceiling + 0.3, -W - 0.05, W + 0.05, [PAINT.soot, PAINT.roofGrey]))
+
+  // Side walls: red below, cream above, one window each.
+  for (const side of [1, -1]) {
+    const inner = side * (W - 0.08)
+    const z0 = Math.min(inner, side * W)
+    const z1 = Math.max(inner, side * W)
+    shell.push(slab(back, front, F, F + sill, z0, z1, red), slab(back, front, F + head, CAR.ceiling + 0.3, z0, z1, cream))
+    for (const x of [back, back + 1.3, front - 0.14]) shell.push(slab(x, x + 0.14, F + sill, F + head, z0, z1, red))
+    glass.push(slab(back + 0.14, back + 1.3, F + sill, F + head, side * (W - 0.055), side * (W - 0.055) + 0.02, [PAINT.mist, PAINT.white]), slab(back + 1.44, front - 0.14, F + sill, F + head, side * (W - 0.055), side * (W - 0.055) + 0.02, [PAINT.mist, PAINT.white]))
+    shell.push(slab(back, front, F + sill - 0.03, F + sill + 0.02, side > 0 ? W - 0.14 : -W + 0.08, side > 0 ? W - 0.08 : -W + 0.14, PAINT.brass))
   }
-  booth.push(box(1.0, 0.94, 0.04, green, { at: [0, G + 0.08, -0.55] }))
-  for (const x of [-0.55, 0.55]) booth.push(box(0.04, 0.94, 1.0, green, { at: [x, G + 0.08, 0] }))
-  // The telephone itself, on the back wall, over a shelf with the directory on it.
-  booth.push(box(0.38, 0.52, 0.16, [PAINT.soot, PAINT.iron], { at: [0.06, G + 1.18, -0.44] }), cyl(0.1, 0.1, 0.03, PAINT.brass, { at: [0.06, G + 1.5, -0.35], rot: [QUARTER, 0, 0] }, 12), cyl(0.035, 0.035, 0.035, PAINT.iron, { at: [0.06, G + 1.5, -0.33], rot: [QUARTER, 0, 0] }, 8))
-  booth.push(box(0.1, 0.03, 0.1, PAINT.brass, { at: [STOP.hook[0], G + STOP.hook[1] - 0.06, STOP.hook[2] - 0.1] }), box(0.7, 0.04, 0.26, PAINT.woodDark, { at: [0, G + 1.0, -0.36] }), ...tome(-0.05, G + 1.04, -0.36, 0.34, 0.07, PAINT.rug, 0.1))
-  // Lit from inside: the panes are the light.
-  const panes: BufferGeometry[] = [box(0.98, 1.3, 0.02, PAINT.lamp, { at: [0, G + 1.06, -0.54] })]
-  for (const x of [-0.54, 0.54]) panes.push(box(0.02, 1.3, 0.98, PAINT.lamp, { at: [x, G + 1.06, 0] }))
-  panes.push(blob(0.07, PAINT.lamp, { at: [0, G + 2.34, 0] }, 0.02, 1, 1))
-  const receiver = [limb([0, -0.12, 0], [0, 0.12, 0], 0.022, 0.022, PAINT.soot, 6), blob(0.055, PAINT.soot, { at: [0, 0.14, 0.02], scale: [1, 0.8, 1.2] }, 0.05, 1, 1), blob(0.055, PAINT.soot, { at: [0, -0.14, 0.02], scale: [1, 0.8, 1.2] }, 0.05, 2, 1)]
 
-  // The stop's own pole, with the round sign at its head.
-  const pole = [roughen(cyl(0.06, 0.08, 3.1, [PAINT.iron, PAINT.steel], { at: [0, G - 0.1, 0], rot: [0, 0, 0.02] }, 7), 0.006), cyl(0.38, 0.38, 0.05, PAINT.terracotta, { at: [0.05, G + 2.78, 0.045], rot: [QUARTER, 0, 0] }, 16), cyl(0.31, 0.31, 0.06, PAINT.cream, { at: [0.05, G + 2.78, 0.05], rot: [QUARTER, 0, 0] }, 16)]
-  const planks = STOP.planks.map((y, i) =>
-    hung(`Stop_Plank${i + 1}`, [roughen(box(STOP.plank.width, STOP.plank.height, 0.05, i % 2 ? [PAINT.bleachedDark, PAINT.bleached] : [PAINT.wood, PAINT.woodPale], { at: [0.5, -STOP.plank.height / 2, 0], rot: [0, 0, (i % 2 ? 1 : -1) * 0.035] }), 0.012, i), cyl(0.022, 0.022, 0.03, PAINT.iron, { at: [0.04, 0, 0.025], rot: [QUARTER, 0, 0] }, 6)], [0, G + y, 0.08]),
-  )
+  // The bulkhead behind, with the door back into the train.
+  shell.push(slab(back, back + 0.08, F, CAR.ceiling + 0.3, -W, W, walnut))
+  shell.push(slab(back + 0.08, back + 0.1, F + 0.05, F + 1.95, -0.42, 0.42, [PAINT.walnut, PAINT.walnutLight]), slab(back + 0.1, back + 0.11, F + 1.25, F + 1.7, -0.2, 0.2, [PAINT.mist, PAINT.white]))
+  shell.push(blob(0.03, PAINT.brass, { at: [back + 0.13, F + 1.0, 0.33] }, 0.02, 1, 1))
+  // A cap and a coat on their hooks beside it.
+  shell.push(blob(0.11, [PAINT.cornflowerDeep, PAINT.cornflower], { at: [back + 0.16, F + 1.78, -0.85], scale: [0.6, 0.55, 1] }, 0.08, 2, 1), box(0.1, 0.012, 0.18, PAINT.soot, { at: [back + 0.22, F + 1.72, -0.85], rot: [0, 0, -0.25] }))
+  shell.push(roughen(box(0.1, 0.9, 0.44, [PAINT.walnut, PAINT.woodLight], { at: [back + 0.14, F + 0.72, 0.88] }), 0.016, 6))
 
-  return [
-    part('Stop_Ground', ground),
-    part('Stop_Shelter', shelter),
-    part('Stop_Glow', glow, 'glow'),
-    part('Stop_Booth', booth.map((piece) => put(piece, { at: [bx, 0, bz] }))),
-    part('Stop_Panes', panes.map((piece) => put(piece, { at: [bx, 0, bz] })), 'glow'),
-    hung('Stop_Receiver', receiver, [bx + STOP.hook[0], G + STOP.hook[1], bz + STOP.hook[2]]),
-    part('Stop_Pole', pole.map((piece) => put(piece, { at: [STOP.pole[0], 0, STOP.pole[1]] }))),
-    ...planks.map((plank) => ({ ...plank, pivot: [STOP.pole[0] + plank.pivot![0], plank.pivot![1], STOP.pole[1] + plank.pivot![2]] as const })),
-  ]
+  // The front: three panes over the desk, a cream band above them.
+  shell.push(slab(front - 0.08, front, F, F + sill, -W, W, red), slab(front - 0.08, front, F + head, CAR.ceiling + 0.3, -W, W, cream))
+  for (const z of [-W + 0.07, -0.5, 0.5, W - 0.07]) shell.push(slab(front - 0.08, front, F + sill, F + head, z - 0.07, z + 0.07, red))
+  for (const [z0, z1] of [
+    [-W + 0.14, -0.57],
+    [-0.43, 0.43],
+    [0.57, W - 0.14],
+  ]) {
+    glass.push(slab(front - 0.05, front - 0.03, F + sill, F + head, z0, z1, [PAINT.mist, PAINT.white]))
+  }
+
+  // The desk: a carcass, a flat top for the levers, an upright board for the dials.
+  const { desk, dials, levers, plate } = CAB
+  shell.push(slab(desk, front - 0.08, F, F + 0.86, -1.24, 1.24, walnut), roughen(slab(desk - 0.05, front - 0.08, F + 0.86, F + 0.9, -1.27, 1.27, [PAINT.walnut, PAINT.walnutLight]), 0.003, 8))
+  shell.push(slab(dials[0], front - 0.08, F + 0.9, F + sill, -1.24, 1.24, [PAINT.walnutDeep, PAINT.walnut]), slab(dials[0] - 0.012, dials[0], F + sill - 0.03, F + sill, -1.24, 1.24, PAINT.brass))
+  for (const z of CAB.across) {
+    // A dial: a brass bezel, a pale face, a tick for every tenth.
+    shell.push(cyl(0.118, 0.118, 0.035, PAINT.brass, { at: [dials[0], F + dials[1], z], rot: [0, 0, QUARTER] }, 20), cyl(0.1, 0.1, 0.04, [PAINT.oat, PAINT.white], { at: [dials[0], F + dials[1], z], rot: [0, 0, QUARTER] }, 20))
+    for (let i = 0; i <= 10; i++) {
+      const angle = -2.1 + (i / 10) * 4.2
+      shell.push(box(0.004, i % 5 ? 0.014 : 0.024, 0.005, PAINT.soot, { at: [dials[0] - 0.041, F + dials[1] + Math.cos(angle) * 0.078, z + Math.sin(angle) * 0.078], rot: [angle, 0, 0] }))
+    }
+    // Its name plate, on the edge of the desk under it.
+    shell.push(box(0.01, 0.06, 0.34, PAINT.brass, { at: [plate[0], F + plate[1] - 0.03, z] }))
+    // The quadrant its lever stands in.
+    shell.push(box(0.2, 0.02, 0.07, PAINT.brass, { at: [levers[0], F + 0.9, z] }), box(0.16, 0.022, 0.016, PAINT.soot, { at: [levers[0], F + 0.9, z] }))
+  }
+
+  // The board over the glass, where the destination is written.
+  shell.push(box(0.03, board.height, board.width, [PAINT.oat, PAINT.white], { at: [front - 0.1, F + board.y - board.height / 2, 0] }))
+  for (const side of [-1, 1]) shell.push(box(0.05, board.height + 0.05, 0.03, PAINT.brass, { at: [front - 0.105, F + board.y - board.height / 2 - 0.025, side * (board.width / 2 + 0.015)] }))
+  shell.push(box(0.05, 0.025, board.width + 0.06, PAINT.brass, { at: [front - 0.105, F + board.y + board.height / 2, 0] }), box(0.05, 0.025, board.width + 0.06, PAINT.brass, { at: [front - 0.105, F + board.y - board.height / 2 - 0.025, 0] }))
+
+  // The driver's stool, the brake wheel, the whistle cord, a flask and a mug, a lunch tin, a lantern.
+  shell.push(cyl(0.035, 0.05, 0.56, PAINT.iron, { at: [desk - 0.55, F, 0.62] }, 7), cyl(0.19, 0.19, 0.06, [PAINT.leatherDeep, PAINT.leather], { at: [desk - 0.55, F + 0.56, 0.62] }, 12), cyl(0.16, 0.16, 0.02, PAINT.iron, { at: [desk - 0.55, F, 0.62] }, 10))
+  shell.push(cyl(0.03, 0.04, 0.22, PAINT.iron, { at: [desk + 0.12, F + 0.9, 1.08] }, 7), ring(0.15, 0.016, PAINT.brass, { at: [desk + 0.12, F + 1.13, 1.08], rot: [0, 0, 0.5] }, 16), cyl(0.012, 0.012, 0.3, PAINT.brass, { at: [desk + 0.12 - 0.07, F + 1.0, 1.08], rot: [0, 0, 0.5 - QUARTER] }, 5))
+  shell.push(cyl(0.004, 0.004, 0.62, PAINT.woodPale, { at: [desk - 0.25, CAR.ceiling - 0.62, -0.42] }, 4), cyl(0.018, 0.018, 0.1, [PAINT.wood, PAINT.woodLight], { at: [desk - 0.25, CAR.ceiling - 0.7, -0.42] }, 6))
+  shell.push(cyl(0.035, 0.04, 0.2, [PAINT.tealTinDeep, PAINT.tealTin], { at: [desk + 0.1, F + 0.9, -1.1] }, 9), cyl(0.028, 0.035, 0.04, PAINT.steel, { at: [desk + 0.1, F + 1.1, -1.1] }, 8))
+  shell.push(cyl(0.04, 0.032, 0.065, [PAINT.oat, PAINT.white], { at: [CAB.mug[0], F + 0.9, CAB.mug[2]] }, 9))
+  shell.push(roughen(box(0.2, 0.09, 0.13, [PAINT.rug, PAINT.terracotta], { at: [desk + 0.14, F + 0.9, -0.62], rot: [0, 0.2, 0] }), 0.004, 9))
+  shell.push(cyl(0.003, 0.003, 0.2, PAINT.iron, { at: [back + 0.7, CAR.ceiling - 0.2, -0.95] }, 4), box(0.11, 0.02, 0.11, PAINT.iron, { at: [back + 0.7, CAR.ceiling - 0.22, -0.95] }), box(0.1, 0.02, 0.1, PAINT.iron, { at: [back + 0.7, CAR.ceiling - 0.4, -0.95] }))
+  glow.push(box(0.08, 0.16, 0.08, PAINT.lamp, { at: [back + 0.7, CAR.ceiling - 0.38, -0.95] }), blob(0.12, PAINT.lamp, { at: [back + 1.5, CAR.ceiling - 0.04, 0], scale: [1, 0.45, 1] }, 0.02, 1, 1))
+  // A rug under the driver's feet.
+  shell.push(slab(back + 0.5, desk - 0.12, F + 0.004, F + 0.014, -0.5, 0.5, [PAINT.rug, PAINT.terracottaDeep]), slab(back + 0.58, desk - 0.2, F + 0.014, F + 0.018, -0.42, 0.42, [PAINT.terracottaDeep, PAINT.terracotta]))
+
+  // A needle and a lever, each built from where it turns.
+  const needle = [box(0.004, 0.082, 0.008, PAINT.soot, { at: [0, -0.012, 0] }), cyl(0.012, 0.012, 0.008, PAINT.brass, { at: [0.004, 0, 0], rot: [0, 0, QUARTER] }, 8)]
+  const lever = [limb([0, 0, 0], [0, 0.3, 0], 0.014, 0.011, PAINT.brass, 7), blob(0.034, [PAINT.walnutDeep, PAINT.walnutLight], { at: [0, 0.32, 0] }, 0.03, 2, 2), cyl(0.022, 0.022, 0.05, PAINT.brass, { at: [0, -0.01, -0.025], rot: [QUARTER, 0, 0] }, 8)]
+
+  return [part('Cab_Shell', shell), part('Cab_Glass', glass, 'glass'), part('Cab_Glow', glow, 'glow'), hung('Cab_Needle', needle, [0, 0, 0]), hung('Cab_Lever', lever, [0, 0, 0])]
 }
 
 // ------------------------------------------------------------ clouds

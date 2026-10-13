@@ -57,8 +57,6 @@ export const smoothstep = (edge0: number, edge1: number, x: number): number => {
   return t * t * (3 - 2 * t)
 }
 
-const mix = (a: number, b: number, t: number) => a + (b - a) * t
-
 // ------------------------------------------------------------ the map
 
 /** The sea is perfectly flat, and it is the zero everything else is measured from. */
@@ -70,32 +68,3 @@ export const TRACK = { west: -420, east: 420, gauge: 1.44 }
 /** While the train is under way it runs round this stretch for ever; telegraph posts stand along it. */
 export const CRUISE = { from: 80, to: 200, speed: 9, postEvery: 40 }
 
-/**
- * Where each standalone scene stands, as [x, z]. They are a thousand apart, so
- * that from any one of them the others are lost in the haze: each has the sea
- * and the sky to itself.
- */
-export const SITES = {
-  tower: [2000, 0],
-  signpost: [3000, 0],
-  busstop: [4000, 0],
-} as const satisfies Record<string, readonly [number, number]>
-
-/** The clocktower's room hangs high over the sea, so its window looks out on sky. */
-export const TOWER_FLOOR = 34
-
-/**
- * The coast where the signpost stands, measured from the signpost's site: a
- * low shore running east to west, with the sea to the north (-z) and a
- * meadow rising gently inland. Below zero is open water.
- */
-export function shoreHeight(x: number, z: number): number {
-  // The waterline wanders, and the land gives out toward either end.
-  const waterline = -3.2 + (fbm(x * 0.06 + 5, 1.7, 3) - 0.5) * 5
-  const inland = z - waterline
-  const ends = 1 - smoothstep(46, 78, Math.abs(x))
-  const rise = smoothstep(-1.5, 16, inland) * 2.1 + (fbm(x * 0.07, z * 0.07, 3) - 0.5) * 0.7 * smoothstep(1, 9, inland)
-  // A small knoll for the signpost to stand on.
-  const knoll = 0.55 * Math.exp(-((x - 2) * (x - 2) + z * z) / 30)
-  return mix(-1.6, rise + knoll + 0.12, smoothstep(-2.5, 1.5, inland) * ends)
-}

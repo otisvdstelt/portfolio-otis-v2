@@ -1,25 +1,25 @@
 import { Canvas } from '@react-three/fiber'
 import { EffectComposer } from '@react-three/postprocessing'
 import { use, useEffect, useState } from 'react'
+import type { Leaves } from '../hooks/useProjects'
 import type { Phase, Weather } from '../lib/air'
-import { PLACES, plaqueGaze, type Hot, type PlaceId } from '../lib/places'
+import { PLACES, type Hot, type PlaceId } from '../lib/places'
 import { Motes, Rain } from './three/Air'
 import { lettering, PartsContext, useWorldModel } from './three/assets'
 import { Atmosphere, Sky } from './three/Atmosphere'
 import { CameraRig } from './three/CameraRig'
+import { Cab, Compartment, MailCar } from './three/Cars'
 import { InkPaper } from './three/InkPaper'
+import { LibraryCar, type Volume } from './three/Library'
 import { MEADOW_LAYER } from './three/look'
 import { Railway } from './three/Railway'
-import type { Leaves } from '../hooks/useProjects'
-import { LibraryCar, type Volume } from './three/Library'
-import { BusStop, Coast, Tower, type Division, type Plank } from './three/Scenes'
 import { Sea } from './three/Sea'
 
-export type { Division, Plank, Volume }
+export type { Volume }
 
 export interface WorldProps {
   place: PlaceId
-  /** The place's own words are out: the sketchpad is being read, the telephone is off its hook. */
+  /** The place's own words are out: the journal is being read, the card is being written. */
   open: boolean
   /** `roam`: a free, damped camera with pointer parallax. `backdrop`: fixed views, for touch and modest hardware. */
   mode: 'roam' | 'backdrop'
@@ -33,18 +33,16 @@ export interface WorldProps {
   tome: number | null
   /** What is written in it. */
   leaves: Leaves | null
-  divisions: readonly Division[]
-  /** The plaque of the signpost being pointed at or pinned, or -1. */
-  plaque: number
-  planks: readonly Plank[]
+  /** The lever of the cab being pointed at or left pulled, or -1. */
+  lever: number
   /** How far to slide the picture aside for a panel, as fractions of the view: right, up. */
   shift: readonly [number, number]
   onHot: (hot: Hot | null) => void
   onVisit: (place: PlaceId, open?: boolean) => void
   onProject: (index: number) => void
-  onPlaque: (index: number) => void
-  /** Put the open book back. */
-  onCloseBook: () => void
+  onLever: (index: number) => void
+  /** Put away whatever is being read: the open book, the journal, the card. */
+  onClose: () => void
   /** Ask GitHub for the open book's figures again. */
   onAsk: () => void
   /** The camera has reached a place. */
@@ -55,35 +53,32 @@ export interface WorldProps {
 
 // What each kind of device is asked to draw.
 const BUDGET = {
-  roam: { dpr: [1, 1.75] as [number, number], seeds: 520, motes: 170, rain: 1500, shadow: 2048, mirror: 1024, lavish: true },
-  backdrop: { dpr: [1, 1.5] as [number, number], seeds: 240, motes: 90, rain: 700, shadow: 1024, mirror: 512, lavish: false },
+  roam: { dpr: [1, 1.75] as [number, number], motes: 170, rain: 1500, shadow: 2048, mirror: 1024 },
+  backdrop: { dpr: [1, 1.5] as [number, number], motes: 90, rain: 700, shadow: 1024, mirror: 512 },
 }
 
-const onTheLine = (place: PlaceId) => place === 'halt' || place === 'cabin' || place === 'library'
-
 /**
- * The world. Its model is read through Suspense (the file is preloaded the
- * moment this chunk arrives) and its lettering through `use()`, so the
- * loading sprout holds until every mesh is decoded and every sign can be
- * drawn in the right hand; nothing pops in afterwards.
+ * The world: a sea, a line across it, and one train. Every section of the
+ * site is that train fitted out for something; what it is fitted out with
+ * follows the place the camera has actually reached, and the fog covers the
+ * change.
  *
- * The railway and the three scenes off it stand far apart on one sea, and
- * the library is the train's middle car with its benches taken out. Only
- * what is on screen and what is being travelled to is built at any moment;
- * the fog covers the change.
+ * The model is read through Suspense (the file is preloaded the moment this
+ * chunk arrives) and the lettering through `use()`, so the loading sprout
+ * holds until every mesh is decoded and every sign can be drawn in the right
+ * hand; nothing pops in afterwards.
  */
-export default function World({ place, open, mode, phase, weather, reducedMotion, hot, volumes, tome, leaves, divisions, plaque, planks, shift, onHot, onVisit, onProject, onPlaque, onCloseBook, onAsk, onArrive, onReady }: WorldProps) {
+export default function World({ place, open, mode, phase, weather, reducedMotion, hot, volumes, tome, leaves, lever, shift, onHot, onVisit, onProject, onLever, onClose, onAsk, onArrive, onReady }: WorldProps) {
   const parts = useWorldModel()
   use(lettering)
   const budget = BUDGET[mode]
   // The place the camera has actually reached. It trails `place` by the length of the journey.
   const [shown, setShown] = useState(place)
-  const arrived = shown === place
+  const here = shown === place
   // Until someone boards, the first view is a title card and the camera is not theirs to move.
   const roaming = mode === 'roam' && place !== 'halt'
   const cuts = mode === 'backdrop' || reducedMotion
-  const night = phase === 'night' || Boolean(PLACES[shown].mood.night)
-  const built = (id: PlaceId) => shown === id || place === id
+  const reading = place === 'library' ? tome !== null : open
 
   useEffect(() => {
     onReady()
@@ -93,6 +88,16 @@ export default function World({ place, open, mode, phase, weather, reducedMotion
     // The world arrives once.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // What stands where the middle car's north benches would be.
+  const fitting =
+    shown === 'library' ? (
+      <LibraryCar volumes={volumes} chosen={tome} leaves={leaves} hot={hot} here={here} reducedMotion={reducedMotion} onHot={onHot} onProject={onProject} onClose={onClose} onAsk={onAsk} />
+    ) : shown === 'compartment' ? (
+      <Compartment here={here} open={here && open} reading={here && open && mode === 'roam'} hot={hot} onHot={onHot} onVisit={onVisit} onClose={onClose} />
+    ) : shown === 'mail' ? (
+      <MailCar here={here} open={here && open} hot={hot} onHot={onHot} onVisit={onVisit} />
+    ) : null
 
   return (
     <Canvas
@@ -108,45 +113,17 @@ export default function World({ place, open, mode, phase, weather, reducedMotion
       }}
       // One finger pans the page's sheets; the canvas keeps pinch and drag for the camera only when it is free.
       style={{ touchAction: roaming ? 'none' : 'pan-y' }}
-      // A click on nothing in particular puts the open book back.
-      onPointerMissed={() => tome !== null && onCloseBook()}
+      // A press on nothing in particular puts away whatever is being read.
+      onPointerMissed={() => mode === 'roam' && reading && onClose()}
     >
       <PartsContext value={parts}>
         <Atmosphere phase={phase} mood={PLACES[shown].mood} weather={weather} reducedMotion={reducedMotion} shadowSize={budget.shadow} />
         <Sky reducedMotion={reducedMotion} />
         <Sea resolution={budget.mirror} />
-        {(onTheLine(shown) || onTheLine(place)) && (
-          <Railway
-            place={place}
-            still={mode === 'backdrop' || reducedMotion}
-            hot={hot}
-            onHot={onHot}
-            onVisit={onVisit}
-            library={
-              shown === 'library' ? (
-                <LibraryCar volumes={volumes} chosen={tome} leaves={leaves} hot={hot} here={arrived && place === 'library'} reducedMotion={reducedMotion} onHot={onHot} onProject={onProject} onClose={onCloseBook} onAsk={onAsk} />
-              ) : null
-            }
-          />
-        )}
-        {built('tower') && <Tower here={arrived && place === 'tower'} reading={open} reducedMotion={reducedMotion} onVisit={onVisit} />}
-        {built('signpost') && <Coast divisions={divisions} chosen={shown === 'signpost' && arrived ? plaque : -1} seeds={budget.seeds} night={night} onHot={onHot} onPlaque={onPlaque} />}
-        {built('busstop') && <BusStop here={arrived && place === 'busstop'} open={open && shown === 'busstop'} planks={planks} hot={hot} lavish={budget.lavish} reducedMotion={reducedMotion} onHot={onHot} onVisit={onVisit} />}
+        <Railway place={place} still={cuts} hot={hot} onHot={onHot} onVisit={onVisit} fitting={fitting} cab={shown === 'cab' ? <Cab chosen={here ? lever : -1} here={here} onHot={onHot} onLever={onLever} /> : null} />
         <Motes count={budget.motes} />
         <Rain count={budget.rain} />
-        <CameraRig
-          place={place}
-          reading={mode === 'roam' && (place === 'tower' ? open : place === 'library' && tome !== null)}
-          roaming={roaming}
-          cuts={cuts}
-          reducedMotion={reducedMotion}
-          shift={shift}
-          gaze={place === 'signpost' && plaque >= 0 ? plaqueGaze(plaque) : null}
-          onArrive={(at) => {
-            setShown(at)
-            onArrive(at)
-          }}
-        />
+        <CameraRig place={place} reading={mode === 'roam' && reading} roaming={roaming} cuts={cuts} reducedMotion={reducedMotion} shift={shift} onArrive={(at) => (setShown(at), onArrive(at))} />
         <EffectComposer multisampling={0} enableNormalPass={false}>
           <InkPaper />
         </EffectComposer>

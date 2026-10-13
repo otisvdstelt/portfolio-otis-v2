@@ -1,19 +1,18 @@
 import { Text } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import bodyFace from '@fontsource/klee-one/files/klee-one-latin-400-normal.woff?url'
-import displayFace from '@fontsource/zen-antique-soft/files/zen-antique-soft-latin-400-normal.woff?url'
-import handFace from '@fontsource/yomogi/files/yomogi-latin-400-normal.woff?url'
-import { Suspense, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
-import { MathUtils, type Group, type MeshBasicMaterial } from 'three'
+import { Suspense, useMemo, useRef, useState, type ComponentProps, type RefObject } from 'react'
+import { MathUtils, type Group } from 'three'
 import type { Leaves } from '../../hooks/useProjects'
 import { air } from '../../lib/air'
 import type { Hot } from '../../lib/places'
 import { LEATHERS } from '../../lib/world/palette'
 import { BOOK, CAR, LIBRARY } from '../../lib/world/spec'
 import { useParts } from './assets'
+import { FACES, PAGE, PAGE_INK } from './look'
 import { dry, glow, paintedToon } from './materials'
 import { Piece, Tag } from './Piece'
 import { pressable } from './press'
+import { Ink as Written, Wash } from './Writing'
 
 const QUARTER = Math.PI / 2
 const { width: W, height: H, thickness: T } = BOOK
@@ -27,18 +26,9 @@ export interface Volume {
 
 // ------------------------------------------------------------ writing on the page
 
-// Ink on lit paper: the same at any hour, like the paper sheets on the page (see `.lit` in index.css).
-const INK = '#2c2823'
-const SOFT = '#5e554a'
-const RUST = '#8f4526'
-const MOSS = '#3b533e'
-const RULE = '#cdbd97'
+const { soft: SOFT, rust: RUST, moss: MOSS, rule: RULE } = PAGE_INK
 const BLEND = ['#b8623b', '#3b533e', '#e3b659', '#a3c1ad', '#5e554a']
-const FACES = { body: bodyFace, display: displayFace, hand: handFace }
-
-/** Both pages lie level with the cut of the book. Everything written on them is laid a hair above that. */
-const SHEET = T / 2 + 0.0012
-const WRITING = T / 2 + 0.0026
+const SHEET = PAGE.sheet
 
 // Where the writing goes on each page: left edge, width, and the top line. (The book's own x runs across the page, its z down it.)
 const COLUMN = 0.32
@@ -51,51 +41,9 @@ const FOOT = (H - 0.036) / 2 - 0.036
 /** A web address as it would be written on a luggage label: no scheme, no trailing slash. */
 const asPath = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
-interface InkProps {
-  /** 0 nothing on the page yet, 1 fully written. */
-  ink: RefObject<number>
-  /** Across and down the page, from the book's own middle. */
-  at: readonly [x: number, z: number]
-  size: number
-  face?: keyof typeof FACES
-  colour?: string
-  width?: number
-  leading?: number
-  anchor?: 'left' | 'right'
-  from?: 'top' | 'bottom'
-  onClick?: (event: ThreeEvent<MouseEvent>) => void
-  onPointerOver?: (event: ThreeEvent<PointerEvent>) => void
-  onPointerOut?: (event: ThreeEvent<PointerEvent>) => void
-  children: ReactNode
-}
-
-/** A line or a paragraph written on a page of the open book. It comes up out of the paper as the book finishes opening. */
-function Ink({ ink, at, size, face = 'body', colour = INK, width = COLUMN, leading = 1.3, anchor = 'left', from = 'top', children, ...events }: InkProps) {
-  const text = useRef<{ fillOpacity: number; visible: boolean } | null>(null)
-  useFrame(() => {
-    if (!text.current) return
-    text.current.fillOpacity = ink.current
-    text.current.visible = ink.current > 0.01
-  })
-  return (
-    <Text ref={text as never} font={FACES[face]} fontSize={size} color={colour} maxWidth={width} lineHeight={leading} overflowWrap="break-word" anchorX={anchor} anchorY={from} fillOpacity={0} position={[at[0], WRITING, at[1]]} rotation={[-QUARTER, 0, 0]} {...events}>
-      {children}
-    </Text>
-  )
-}
-
-/** A flat patch of colour on the page: a sheet of paper, a ruled line, a brush stroke. */
-function Wash({ ink, at, size, colour, strength = 1, lift = WRITING }: { ink: RefObject<number>; at: readonly [x: number, z: number]; size: readonly [number, number]; colour: string; strength?: number; lift?: number }) {
-  const paint = useRef<MeshBasicMaterial>(null)
-  useFrame(() => {
-    if (paint.current) paint.current.opacity = ink.current * strength
-  })
-  return (
-    <mesh position={[at[0], lift, at[1]]} rotation={[-QUARTER, 0, 0]}>
-      <planeGeometry args={[size[0], size[1]]} />
-      <meshBasicMaterial ref={paint} color={colour} transparent opacity={0} depthWrite={false} toneMapped={false} />
-    </mesh>
-  )
+/** Writing on a page of the book: it wraps at the page's own column unless told otherwise. */
+function Ink(props: ComponentProps<typeof Written>) {
+  return <Written width={COLUMN} {...props} />
 }
 
 interface PagesProps {
@@ -299,7 +247,7 @@ function Book({ index, title, kind, chosen, isHot, live, leaves, reducedMotion, 
           <Piece name="Book_Front" material={leather} hung line={0.006} {...press} />
           <Piece name="Book_LeavesLeft" material={dry} hung line={0.003} {...press} />
           <Suspense fallback={null}>
-            <Text font={displayFace} fontSize={0.05} maxWidth={W - 0.13} textAlign="center" lineHeight={1.08} color="#f0d48a" anchorX="center" anchorY="middle" position={[W / 2, T / 2 + 0.005, -0.03]} rotation={[-QUARTER, 0, 0]}>
+            <Text font={FACES.display} fontSize={0.05} maxWidth={W - 0.13} textAlign="center" lineHeight={1.08} color="#f0d48a" anchorX="center" anchorY="middle" position={[W / 2, T / 2 + 0.005, -0.03]} rotation={[-QUARTER, 0, 0]}>
               {title}
             </Text>
           </Suspense>

@@ -2,7 +2,7 @@
 
 <!-- impeccable:product-schema 1 -->
 
-Written from the owner's build briefs and their answers during the build (October 2026). This is the third world the site has had: the first, a valley, is kept in git under the tag `valley-v1`; the second, a railway to a coastal town, under `sea-railway-v2`. The third brief kept the train and replaced everything it travels to.
+Written from the owner's build briefs and their answers during the build (October 2026). The site has been through four worlds: a valley (git tag `valley-v1`), a railway to a coastal town (`sea-railway-v2`), a train with three scenes standing on the sea, and now the train alone. Each time the owner kept the train and asked for more of it.
 
 ## Platform
 
@@ -18,11 +18,11 @@ People deciding whether to work with Otis: internship supervisors, studios and r
 
 ## Product Purpose
 
-Otis van der Stelt's portfolio. It shows who Otis is, what Otis can do and has made, and how to write, and it is itself the strongest piece of evidence: a hand-built 3D world instead of a page of cards. Success is a visitor who boards the train, opens at least one book in the library and then reads the sketchpad or leaves a note at the bus stop.
+Otis van der Stelt's portfolio. It shows who Otis is, what Otis can do and has made, and how to write, and it is itself the strongest piece of evidence: a hand-built 3D world instead of a page of cards. Success is a visitor who boards the train, opens at least one book in the library and then reads the journal or writes a postcard.
 
 ## Positioning
 
-The site is a journey, not a document. A train crossing a flat sea is the hub; the four sections are the train's own library car and three scenes standing on the same sea (a clocktower, a signpost on the coast, a bus stop), each reached by walking to a window seat and letting a bank of fog roll over the picture. Nothing is a page load. Successor to the owner's Next.js bento-grid portfolio at otisvanderstelt.vercel.app.
+The site is a journey, not a document, and all of it is one train crossing a flat sea. The passenger car is the hub; the four sections are the same train fitted out for one thing each (a library car, a compartment, the driver's cab, a mail car), each reached by walking to a window seat and letting a bank of fog roll over the picture. Nothing is a page load. Successor to the owner's Next.js bento-grid portfolio at otisvanderstelt.vercel.app.
 
 ## Operating Context
 
@@ -30,16 +30,16 @@ Opened cold, often once. Many visits are on a phone, so everything must be reach
 
 ## Capabilities and Constraints
 
-- A title card (the halt on the water), a hub (the train car: look around, pick a bench or a stop on the route map) and four destinations: the library car (projects: four leather books face out on a bookcase; a chosen book floats across the aisle, opens itself, and carries its words on its own pages), the clocktower archive (about, on a sketchpad seen from straight above), the coastal signpost (skills, four plaques, each turning the camera and the hour of the sky), the seaside bus stop (contact: a telephone box, a notepad that is a form, planks that are social links).
+- A title card (the halt on the water), a hub (the passenger car: look around, pick a bench or a stop on the route map) and four destinations: the library car (projects: four leather books face out on a bookcase; a chosen book floats across the aisle, opens itself, and carries its words on its own pages), the compartment (about: a journal open on the table, read from straight above, and the timeline as tickets along the window), the driver's cab (skills: four levers, each swinging a dial and writing its division on the board over the windscreen), the mail car (contact: a postcard that is a form, and four named pigeonholes that are the social links).
 - Leaving the train car for a destination on a wide screen, the camera walks down the aisle and sits at that destination's window; the moment it settles, fog rolls across and the new scene is there when it rolls off. Every other change of scene is the fog alone.
 - Projects: which repositories stand on the library's ledge is listed in `public/data/projects.json`. Each one's figures (languages, dates, stars, forks, issues, live address) are fetched from the GitHub API when its book is opened, and cached by TanStack Query. The API is used anonymously, so it allows about sixty requests an hour per visitor; a refusal is shown as such and never retried automatically.
 - Wide screens with a pointer: a free, damped camera with pointer parallax, and the train actually travelling. Touch screens, windows under 1024 px and modest hardware: fixed compositions as animated backdrops, a text menu pinned to the bottom, and text sheets that slide up from it.
-- It is night after 19:00 by the visitor's clock, and always night at the bus stop; the page's dark theme follows. A text switch in the header changes sun for rain.
+- It is night after 19:00 by the visitor's clock, and the page's dark theme follows. A text switch in the header changes sun for rain.
 - Contact has no server: the note opens the visitor's own mail app, addressed to otisstelt@outlook.com.
 - The whole world is generated by scripts in the repo and shipped as one Draco-compressed `.glb`.
-- Undecided: the LinkedIn profile URL (the plank points at LinkedIn's front page until the owner supplies it).
-- Undecided: whether the four repositories now in the library are the ones the owner wants shown.
-- The owner has said the train is the look the whole site should have; the clocktower, the signpost and the bus stop do not have it yet and are to be reworked. They were taken from the owner's GitHub and previous portfolio; the owner asked for placeholders before the revised brief asked for live repository data.
+- Undecided: the LinkedIn profile URL (its pigeonhole points at LinkedIn's front page until the owner supplies it).
+- Undecided: whether the four repositories now in the library are the ones the owner wants shown. They were taken from the owner's GitHub and previous portfolio; the owner asked for placeholders before a later brief asked for live repository data.
+- The owner's standing direction: the train is the look the whole site should have, every scene should feel like a film by Studio Ghibli, and words should be on the things in the scene, not on paper that pops up over it.
 
 ## Brand Commitments
 
@@ -50,7 +50,7 @@ Pinned by the owner's briefs:
 - Analog texture over digital perfection, in every part.
 - Five named colours as CSS variables: `--color-canvas-base` #f7f4eb, `--color-canvas-text` #2c2823, `--color-ghibli-green` #3b533e, `--color-ghibli-sky` #a3c1ad, `--color-ghibli-earth` #b8623b.
 - Cel shading in exactly three bands with a nearest-filtered gradient map; an inked outline round every model; watercolour grain and paint-bleed on surfaces.
-- Golden hour on the line, the sun thirty degrees up; each destination off the line has its own sky (amber through the clock face, airy at the signpost, starry at the bus stop).
+- Golden hour, the sun thirty degrees up, everywhere: every section is on the train.
 - Labels are text, never icons. The landing button reads "Board the Train".
 - Motto, in Otis's own words: "Break things, learn from them, build better."
 

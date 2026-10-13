@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Night is a theme, not a media query: it follows the visitor's clock, and it is always night at the bus stop (see src/App.tsx). */
+/* Night is a theme, not a media query: it follows the visitor's clock, and it is set once when the page opens (see src/main.tsx). */
 @custom-variant dark (&:where([data-theme='night'], [data-theme='night'] *));
 
 @theme {
@@ -869,7 +869,7 @@
     transition-delay: 0s;
   }
 
-  /* The sketchpad is laid over the middle of the picture, where the camera has just dropped to look straight down at it. */
+  /* The postcard is laid over the middle of the picture, where the camera has just dropped to look straight down at it. */
   @media (min-width: 1024px) {
     .panel[data-centre='true'] {
       left: 50%;
@@ -1458,124 +1458,9 @@
     color: var(--color-ink);
   }
 
-  /* ------------------------------------------------------------ the signpost (skills) */
+  /* ------------------------------------------------------------ the levers (skills) */
 
-  /* The sheet of parchment that blows in when a plaque is chosen. Nothing in it can be pressed; the pointer goes through to the post. */
-  .gust {
-    position: absolute;
-    right: clamp(1.5rem, 7vw, 7.5rem);
-    bottom: calc(var(--trail-height) + 4.2rem);
-    z-index: 2;
-    width: min(23rem, 34vw);
-  }
-
-  /* Looking left, the post is on the right, so the sheet lands on the left, clear of the list. */
-  .gust[data-side='left'] {
-    right: auto;
-    left: clamp(17rem, 24vw, 26rem);
-  }
-
-  .overlay > .gust {
-    pointer-events: none;
-  }
-
-  .gust-sheet {
-    padding: 1.5rem 1.8rem 1.6rem;
-    rotate: -2.5deg;
-    transform-origin: 30% 0;
-    animation:
-      blow-in 1150ms var(--ease-out-expo) both,
-      flutter 5.5s ease-in-out 1150ms infinite;
-  }
-
-  .gust[data-shown='false'] .gust-sheet {
-    animation: blow-out 750ms cubic-bezier(0.5, 0, 0.9, 0.4) both;
-  }
-
-  /* In from the upper right, turning over as it comes, with one overshoot as it lands. */
-  @keyframes blow-in {
-    from {
-      translate: 58vw -36vh;
-      rotate: 52deg;
-      opacity: 0;
-    }
-    22% {
-      opacity: 1;
-    }
-    62% {
-      rotate: -8deg;
-    }
-    82% {
-      rotate: 0.5deg;
-    }
-    to {
-      translate: 0 0;
-      rotate: -2.5deg;
-      opacity: 1;
-    }
-  }
-
-  @keyframes flutter {
-    0%,
-    100% {
-      rotate: -2.5deg;
-      translate: 0 0;
-    }
-    50% {
-      rotate: -1.3deg;
-      translate: 0 -0.3rem;
-    }
-  }
-
-  /* And on, down the wind. */
-  @keyframes blow-out {
-    from {
-      translate: 0 0;
-      rotate: -2.5deg;
-      opacity: 1;
-    }
-    to {
-      translate: -72vw 14vh;
-      rotate: -44deg;
-      opacity: 0;
-    }
-  }
-
-  .gust-hour {
-    margin: 0;
-    font-family: var(--font-hand);
-    font-size: 1.08rem;
-    line-height: 1.3;
-    color: var(--color-rust);
-  }
-
-  .gust-title {
-    margin: 0.1rem 0 0;
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(1.6rem, 2.4vw, 2rem);
-    line-height: 1.12;
-    text-wrap: balance;
-  }
-
-  .gust-skills {
-    margin: 0.8rem 0 0;
-    padding: 0;
-    list-style: none;
-    font-family: var(--font-display);
-    font-size: 1.16rem;
-    line-height: 1.3;
-  }
-
-  .gust-skills li {
-    padding: 0.42rem 0;
-  }
-
-  .gust-skills li + li {
-    border-top: 1px dashed var(--color-rule);
-  }
-
-  /* The same four ways as a list, for a phone. */
+  /* The cab's four levers as a list, for a phone. */
   .ways {
     margin: 1.1rem 0 0;
     padding: 0;
@@ -1606,15 +1491,15 @@
     translate: 0.4rem 0;
   }
 
-  /* A dab of the colour the sky turns. Chosen, it lifts off the paper. */
+  /* A brass knob. Chosen, it lifts off the paper as the lever goes forward. */
   .way-dab {
-    grid-row: span 3;
+    grid-row: span 2;
     align-self: start;
     width: 1.3rem;
     height: 1.3rem;
     margin-top: 0.25rem;
     border-radius: 58% 42% 55% 45% / 45% 58% 42% 55%;
-    background: var(--dab);
+    background: radial-gradient(circle at 35% 30%, #f3d58a, #cf9f49 55%, #8a6327);
     box-shadow: inset -2px -3px 0 rgb(40 22 12 / 0.18);
     transition:
       translate 500ms var(--ease-out-expo),
@@ -1627,7 +1512,7 @@
     translate: 0 -0.3rem;
     box-shadow:
       inset -2px -3px 0 rgb(40 22 12 / 0.18),
-      0 0.5rem 0.7rem -0.1rem var(--dab);
+      0 0.5rem 0.7rem -0.1rem #cf9f49;
   }
 
   .way-name {
@@ -1649,46 +1534,85 @@
     line-height: 1.4;
   }
 
-  /* ------------------------------------------------------------ the notepad (contact) */
+  /* ------------------------------------------------------------ the postcard (contact) */
 
-  /* A notepad held under the lantern: warm paper at any hour, a card strip across its head, and the light pooling round it. */
-  .notepad {
-    padding: 2.6rem 1.7rem 1.5rem;
-    filter: drop-shadow(0 0 2.6rem rgb(255 196 120 / 0.26));
+  /* A postcard from the desk: the message on one half, the address on the other, a line ruled between them. */
+  .postcard {
+    container-type: inline-size;
+    padding: 1.6rem 1.7rem 1.4rem;
   }
 
-  .notepad::after {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto;
-    height: 1.5rem;
-    border-radius: 3px 5px 0 0;
-    background: #8f4526 var(--tooth);
-    /* The line the page tears along. */
-    box-shadow: 0 0.42rem 0 -0.36rem var(--color-rule);
-    filter: url(#deckle-fine);
+  .postcard-faces {
+    display: grid;
+    gap: 0 2rem;
   }
 
-  .notepad-lede {
-    margin: 0.35rem 0 0;
+  .postcard-address {
+    position: relative;
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    border-top: 1.5px dashed var(--color-rule);
+  }
+
+  @container (min-width: 38rem) {
+    .postcard-faces {
+      grid-template-columns: 1.15fr 1fr;
+    }
+
+    .postcard-address {
+      margin-top: 0;
+      padding: 0 0 0 2rem;
+      border-top: 0;
+      border-left: 1.5px solid var(--color-rule);
+    }
+
+    .postcard-foot {
+      grid-column: 1 / -1;
+    }
+
+    .postcard .field textarea {
+      min-height: 11.4rem;
+    }
+  }
+
+  /* Where the stamp goes: the name of the line, franked in the corner. */
+  .postcard-stamp {
+    float: right;
+    margin: 0 0 0.6rem 1rem;
+    padding: 0.5rem 0.7rem 0.55rem;
+    border: 1.5px dashed var(--color-rust);
+    border-radius: 3px;
+    color: var(--color-rust);
+    font-family: var(--font-display);
+    font-size: 0.92rem;
+    line-height: 1.15;
+    text-align: center;
+    rotate: 3deg;
+  }
+
+  .postcard-to {
+    margin: 0.2rem 0 0;
     font-family: var(--font-hand);
-    font-size: 1.1rem;
+    font-size: 1.08rem;
+    line-height: 1.3;
     color: var(--color-ink-soft);
   }
 
-  .notepad-heading {
-    margin: 1.7rem 0 0;
+  .postcard-to b {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: 1.14rem;
-    line-height: 1.25;
-    color: var(--color-rust);
+    font-size: 1.3rem;
+    color: var(--color-ink);
   }
 
-  @media (max-width: 1023px) {
-    .notepad {
-      padding: 2.4rem 1.2rem 1.3rem;
-    }
+  .postcard-foot {
+    margin-top: 1.3rem;
+  }
+
+  .postcard-holes {
+    margin: 0.7rem 0 0;
+    font-family: var(--font-hand);
+    font-size: 1.08rem;
   }
 
   .field {
@@ -1703,7 +1627,7 @@
     color: var(--color-ink-soft);
   }
 
-  /* Fields are written straight onto the pad's ruled lines; there are no boxes. */
+  /* Fields are written straight onto the card's ruled lines; there are no boxes. */
   .field input,
   .field textarea {
     width: 100%;
@@ -1756,49 +1680,6 @@
     font-size: 0.95rem;
     line-height: 1.5;
     color: var(--color-ink-soft);
-  }
-
-  .planks {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 0.55rem;
-    margin: 0.6rem 0 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  /* A wooden plank with a name cut into it: the same four that are nailed to the stop's pole. */
-  .plank {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-    padding: 0.2rem 0.95rem 0.3rem;
-    border-radius: 5px 8px 6px 9px;
-    background:
-      var(--tooth),
-      linear-gradient(172deg, #cba77c, #b3855c);
-    box-shadow:
-      inset 0 0 0 1px rgb(60 36 20 / 0.35),
-      inset 0 -5px 6px -4px rgb(60 36 20 / 0.5),
-      0 5px 6px -3px rgb(58 42 32 / 0.4);
-    color: #2f2018;
-    font-family: var(--font-hand);
-    font-size: 1.1rem;
-    text-decoration: none;
-    transition: rotate 600ms var(--ease-out-expo);
-  }
-
-  .planks li:nth-child(odd) .plank {
-    rotate: -2deg;
-  }
-
-  .planks li:nth-child(even) .plank {
-    rotate: 1.5deg;
-  }
-
-  .planks li .plank:hover,
-  .planks li .plank:focus-visible {
-    rotate: 0deg;
   }
 
   /* ------------------------------------------------------------ the sprout (loading) */

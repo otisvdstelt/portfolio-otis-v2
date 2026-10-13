@@ -3,13 +3,13 @@ import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, use
 import { Bookmark } from './components/ui/Bookmark'
 import { Catalogue, OpenBook } from './components/ui/Catalogue'
 import { Header, Hint, Landing, PaperFilters, Prompts, Trail, type Prompt } from './components/ui/Chrome'
-import { Notepad } from './components/ui/Notepad'
+import { Journal } from './components/ui/Journal'
+import { Levers } from './components/ui/Levers'
 import { Panel } from './components/ui/Panel'
-import { Sketchpad } from './components/ui/Sketchpad'
+import { Postcard } from './components/ui/Postcard'
 import { Sprout, Sprouting } from './components/ui/Sprout'
 import { Tags } from './components/ui/Tags'
-import { Gust, Ways } from './components/ui/Waymarks'
-import { DIVISIONS, OWNER, PLANKS } from './content/site'
+import { DIVISIONS, LINKS, OWNER } from './content/site'
 import { COMPACT, useMediaQuery, useMode } from './hooks/useLayout'
 import { seatsQuery, useLeaves } from './hooks/useProjects'
 import { readPhase, type Weather } from './lib/air'
@@ -21,7 +21,7 @@ const World = lazy(() => import('./components/World'))
 
 const BOOKS = 4
 
-/** The address names the scene, and in the library the book: `#/tower`, `#/library/book-2`. */
+/** The address names the car, and in the library the book: `#/cab`, `#/library/book-2`. */
 function readAddress(): { place: PlaceId; tome: number | null } {
   const [, first = '', second = ''] = window.location.hash.split('/')
   const place = isPlaceId(first) ? first : 'halt'
@@ -58,12 +58,12 @@ export default function App() {
   /** The place the camera has actually reached: it trails `place` by the length of the journey. */
   const [reached, setReached] = useState(place)
   const [hot, setHot] = useState<Hot | null>(null)
-  /** The plaque of the signpost whose sheet is being kept out. */
-  const [pinned, setPinned] = useState<number | null>(null)
+  /** The lever of the cab that has been left pulled. */
+  const [pulled, setPulled] = useState<number | null>(null)
   const [ready, setReady] = useState(false)
   const [painted, setPainted] = useState(true)
   const arrival = useRef<number | undefined>(undefined)
-  /** Open the place's words once the camera is there. */
+  /** Bring the place's words out once the camera is there. */
   const wanted = useRef(false)
   // The latest whereabouts, for handlers that must not be rebuilt on every step.
   const where = useRef({ place, open, tome })
@@ -75,19 +75,15 @@ export default function App() {
   // The words of whichever book is open, with GitHub's figures for it.
   const { leaves, ask } = useLeaves(tome === null ? undefined : seats?.[tome], tome)
 
-  // On a phone, and wherever the world cannot be drawn, every scene's words come up on a sheet as soon as the visitor is there.
+  // On a phone, and wherever the world cannot be drawn, every car's words come up on a sheet as soon as the visitor is there.
   const sheets = compact || !painted
-  const here = painted ? reached : place
-  const arrived = here === place
+  const arrived = (painted ? reached : place) === place
 
-  // It is always night at the bus stop, and the page goes dark with it.
-  const night = phase === 'night' || Boolean(PLACES[here].mood.night)
   useEffect(() => {
-    document.documentElement.dataset.theme = night ? 'night' : 'day'
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', night ? '#171b2e' : '#f7f4eb')
-  }, [night])
+    document.documentElement.dataset.theme = phase
+  }, [phase])
 
-  /** Go to a scene. With `andOpen`, its words come out once the camera has arrived. */
+  /** Go to a car. With `andOpen`, its words come out once the camera has arrived. */
   const visit = useCallback(
     (to: PlaceId, andOpen = false) => {
       window.clearTimeout(arrival.current)
@@ -97,7 +93,7 @@ export default function App() {
         if (andOpen && isDestination(to)) setWhere((then) => ({ ...then, open: true }))
         return
       }
-      setPinned(null)
+      setPulled(null)
       window.history.pushState(null, '', addressOf(to))
       const opens = isDestination(to) && (andOpen || sheets)
       // Without a picture there is no journey to wait for.
@@ -123,15 +119,18 @@ export default function App() {
     setWhere((then) => ({ place: 'library', open: then.place === 'library' && then.open, tome: index }))
   }, [])
 
-  const closeBook = useCallback(() => {
-    if (where.current.tome === null) return
+  /** Put away whatever is being read: the open book, or else the journal or the card. */
+  const close = useCallback(() => {
+    if (where.current.tome === null) {
+      setWhere((then) => ({ ...then, open: false }))
+      return
+    }
     window.history.replaceState(null, '', addressOf('library'))
     setWhere((then) => ({ ...then, tome: null }))
   }, [])
 
-  const closePanel = useCallback(() => setWhere((then) => ({ ...then, open: false })), [])
-  /** Pressing a plaque keeps its sheet out; pressing it again lets the sheet go. */
-  const pin = useCallback((index: number) => setPinned((now) => (now === index ? null : index)), [])
+  /** Pulling a lever leaves it pulled; pulling it again lets it go. */
+  const pull = useCallback((index: number) => setPulled((now) => (now === index ? null : index)), [])
 
   // Back, forward and hand-edited addresses.
   useEffect(() => {
@@ -155,26 +154,25 @@ export default function App() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
-      if (tome !== null) {
-        if (!sheets) closeBook()
-      } else if (open) closePanel()
-      else setPinned(null)
+      if (tome !== null && sheets) return
+      if (tome !== null || open) close()
+      else setPulled(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [tome, open, sheets, closeBook, closePanel])
+  }, [tome, open, sheets, close])
 
   useEffect(() => {
     document.title = place === 'halt' ? `${OWNER.name} · ${OWNER.title}` : `${PLACES[place].name}: ${PLACES[place].role} · ${OWNER.name}`
   }, [place])
 
-  // The plaque that has the sky: the one under the pointer, or failing that the one pinned.
-  const pointed = place !== 'signpost' ? -1 : hot?.kind === 'plaque' ? hot.index : (pinned ?? -1)
+  // The lever that is working: the one under the pointer, or failing that the one left pulled.
+  const lever = place !== 'cab' ? -1 : hot?.kind === 'lever' ? hot.index : (pulled ?? -1)
   const at = (id: PlaceId) => open && place === id
-  // The picture slides aside to leave the scene in view beside its panel (wide) or above its sheet (phone).
-  const shift: readonly [number, number] = !open ? [0, 0] : compact ? [0, 0.17] : place === 'busstop' ? [-0.14, 0] : [0, 0]
+  // On a phone the picture slides up to stay in view above its sheet.
+  const shift: readonly [number, number] = open && compact ? [0, 0.17] : [0, 0]
 
-  // What can be done here, in words, for a wide screen. (On a phone the same things are on the scene's sheet.)
+  // What can be done here, in words, for a wide screen. (On a phone the same things are on the car's sheet.)
   const prompts: { title: string; list: Prompt[] } =
     place === 'library'
       ? {
@@ -187,21 +185,31 @@ export default function App() {
             onPoint: (over) => setHot(over ? { kind: 'tome', index } : null),
           })),
         }
-      : place === 'tower'
-        ? { title: 'On the drafting table', list: [{ label: 'Open the sketchpad', note: 'about me', onPress: () => visit('tower', true) }] }
-        : place === 'signpost'
+      : place === 'compartment'
+        ? { title: 'On the table', list: [{ label: 'Read the journal', note: 'about me', onPress: () => visit('compartment', true) }] }
+        : place === 'cab'
           ? {
-              title: 'The post points four ways',
-              list: DIVISIONS.map(({ name, hour }, index) => ({
+              title: 'Four levers on the desk',
+              list: DIVISIONS.map(({ name }, index) => ({
                 label: name,
-                note: hour,
-                hot: pointed === index,
-                onPress: () => pin(index),
-                onPoint: (over) => setHot(over ? { kind: 'plaque', index } : null),
+                hot: lever === index,
+                onPress: () => pull(index),
+                onPoint: (over) => setHot(over ? { kind: 'lever', index } : null),
               })),
             }
-          : place === 'busstop'
-            ? { title: 'Under the lantern', list: [{ label: 'Pick up the telephone', note: 'write to me', onPress: () => visit('busstop', true) }] }
+          : place === 'mail'
+            ? {
+                title: 'On the desk, and in the pigeonholes',
+                list: [
+                  { label: 'Write a postcard', note: 'to me', onPress: () => visit('mail', true) },
+                  ...LINKS.map(({ label, href }, index) => ({
+                    label,
+                    hot: hot?.kind === 'hole' && hot.index === index,
+                    onPress: () => void window.open(href, '_blank', 'noopener,noreferrer'),
+                    onPoint: (over: boolean) => setHot(over ? { kind: 'hole', index } : null),
+                  })),
+                ],
+              }
             : { title: '', list: [] }
 
   return (
@@ -223,15 +231,13 @@ export default function App() {
                 volumes={volumes}
                 tome={tome}
                 leaves={leaves}
-                divisions={DIVISIONS}
-                plaque={pointed}
-                planks={PLANKS}
+                lever={lever}
                 shift={shift}
                 onHot={setHot}
                 onVisit={visit}
                 onProject={showProject}
-                onPlaque={pin}
-                onCloseBook={closeBook}
+                onLever={pull}
+                onClose={close}
                 onAsk={ask}
                 onArrive={arrive}
                 onReady={() => setReady(true)}
@@ -248,24 +254,46 @@ export default function App() {
         <Hint shown={place === 'cabin' && arrived && painted}>{compact ? 'Pick a stop below, and take a window seat.' : 'Look around. Then pick a bench, or a stop on the route map.'}</Hint>
 
         {!sheets && <Prompts shown={isDestination(place) && arrived && !open && tome === null} title={prompts.title} prompts={prompts.list} />}
-        {!sheets && <Gust index={arrived ? pointed : -1} />}
-        {!sheets && <Bookmark leaves={arrived ? leaves : null} onClose={closeBook} />}
+        {/* On a wide screen the book and the journal carry their own words in the picture; these are their ribbons. */}
+        {!sheets && (
+          <Bookmark shown={arrived && leaves !== null} label={`${leaves?.title ?? 'The book'}: links`} links={leaves ? [...(leaves.live ? [{ label: 'open the live site', href: leaves.live }] : []), { label: 'read the source', href: leaves.source }] : []} closeLabel="close the book" onClose={close}>
+            {leaves && (
+              <>
+                <h2>
+                  {leaves.volume}: {leaves.title}
+                </h2>
+                <p>{leaves.kind}</p>
+                <p>{leaves.summary}</p>
+                <p>Built with {leaves.stack}.</p>
+                {'rows' in leaves.figures && <p>From GitHub, just now: {leaves.figures.rows.map(([label, value]) => `${label} ${value}`).join(', ')}.</p>}
+                {'trouble' in leaves.figures && <p>{leaves.figures.trouble}</p>}
+              </>
+            )}
+          </Bookmark>
+        )}
+        {!sheets && (
+          <Bookmark shown={arrived && at('compartment')} label="The journal" closeLabel="close the journal" onClose={close}>
+            <Journal />
+          </Bookmark>
+        )}
 
         {sheets && (
-          <Panel open={at('library') && tome === null} label="Projects" closeLabel="put the catalogue away" onClose={closePanel}>
+          <Panel open={at('library') && tome === null} label="Projects" closeLabel="put the catalogue away" onClose={close}>
             <Catalogue hot={hot} onHot={setHot} onProject={showProject} />
           </Panel>
         )}
-        <Panel open={at('tower')} label="About Otis" closeLabel="close the sketchpad" wide centre={!sheets} onClose={closePanel}>
-          <Sketchpad />
-        </Panel>
         {sheets && (
-          <Panel open={at('signpost')} label="Skills" closeLabel="fold the list" onClose={closePanel}>
-            <Ways pointed={pointed} onHot={setHot} onPlaque={pin} />
+          <Panel open={at('compartment')} label="About Otis" closeLabel="close the journal" wide onClose={close}>
+            <Journal />
           </Panel>
         )}
-        <Panel open={at('busstop')} label="Write to Otis" closeLabel="hang up" onClose={closePanel}>
-          <Notepad />
+        {sheets && (
+          <Panel open={at('cab')} label="Skills" closeLabel="fold the list" onClose={close}>
+            <Levers pulled={lever} onHot={setHot} onLever={pull} />
+          </Panel>
+        )}
+        <Panel open={at('mail')} label="Write to Otis" closeLabel="put the card down" wide centre={!sheets} onClose={close}>
+          <Postcard />
         </Panel>
 
         {!painted && <p className="unpainted hand">The world could not be painted on this device. Everything written in it is still here: follow the route map below.</p>}
@@ -276,7 +304,7 @@ export default function App() {
         <Sprout />
       </main>
 
-      <OpenBook index={sheets ? tome : null} seats={seats} onClose={closeBook} />
+      <OpenBook index={sheets ? tome : null} seats={seats} onClose={() => where.current.tome !== null && close()} />
     </div>
   )
 }

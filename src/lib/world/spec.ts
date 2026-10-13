@@ -58,55 +58,66 @@ export const LIBRARY = {
   arm: 0.92,
 }
 
-/**
- * The clocktower's room, measured from the middle of its floor. It is an
- * octagon; the wall at +z is the clock face, and the whole room is turned so
- * that wall faces the low sun.
- */
-export const TOWER = {
-  apothem: 9,
-  height: 14,
-  /** Turn of the room about its axis, so that +z points at the sun's bearing. */
-  yaw: -0.6435,
-  clock: { y: 6.5, radius: 3.3 },
-  /** The drafting table's top, and the sketchpad lying on it. */
-  table: [0, 1.12, -0.6] as Triple,
-  pad: [-0.35, 1.2, -0.75] as Triple,
-  pendulum: [0, 9.6, 7.4] as Triple,
-  gears: [
-    [0, 6.5, 8.35, 1.5] as const,
-    [1.75, 5.2, 8.25, 0.8] as const,
-    [-1.5, 7.9, 8.25, 0.65] as const,
-  ],
-  lamp: [2.6, 2.3, -2.2] as Triple,
+/** Somebody's own corner of the middle car, where the north benches were. Measured from the middle of the car, heights from its floor. */
+export const COMPARTMENT = {
+  /** How far from the middle the front edge of each of the two facing seats is. */
+  seat: 0.72,
+  /** The table under the window post: half its length, the height of its top, its front edge. */
+  table: { half: 0.6, top: 0.75, front: -0.7 },
+  /** The journal lies open on the table: the middle of its spread, and its size beside a book of the library. */
+  journal: [0, 0.75, -0.985] as Triple,
+  scale: 0.66,
+  mug: [0.47, 0.75, -1.08] as Triple,
+  /** The tickets tucked along the bottom of the east window: the first, the step to the next, their height. */
+  tickets: { from: 0.36, step: 0.19, y: 0.865 },
+  lamp: [0, 1.5, -0.85] as Triple,
 }
 
-/** The four plaques of the coastal signpost, top to bottom. `side` is the way each points as you face the post from inland. */
-export const PLAQUES = [
-  { height: 3.3, side: -1, yaw: -0.38 },
-  { height: 2.76, side: 1, yaw: 0.34 },
-  { height: 2.22, side: -1, yaw: -0.12 },
-  { height: 1.68, side: 1, yaw: 0.1 },
-] as const
+/** The travelling post office, where the north benches were. Measured from the middle of the car, heights from its floor. */
+export const MAIL = {
+  west: -1.38,
+  east: 1.38,
+  /** The desk's top, and its front edge. */
+  desk: 0.82,
+  front: -0.68,
+  /** The pigeonholes stand on a shelf over the desk and run up to the luggage rack. */
+  shelf: 1.06,
+  top: 2.0,
+  rows: 3,
+  columns: 6,
+  depth: 0.3,
+  /** The four with a name on them, as [column, row]. */
+  named: [
+    [1, 1],
+    [2, 1],
+    [3, 1],
+    [4, 1],
+  ] as const,
+  /** The brass slot in the board behind the desk: where along it, and how high. */
+  slot: [0.5, 1.0] as const,
+  /** The card on the desk. */
+  card: [0, 0.824, -0.93] as Triple,
+  lamp: [-1.05, 1.0, -1.0] as Triple,
+}
 
-export const PLAQUE = { length: 1.9, height: 0.44, thickness: 0.08, inset: 0.14 }
-
-/** The signpost stands on a knoll, a little east of the middle of the shore. */
-export const SIGNPOST = { at: [2, 0] as readonly [number, number] }
-
-/** The bus stop, measured from its site at the water's edge. The shelter opens south (+z), on to the sea. */
-export const STOP = {
-  ground: 0.42,
-  shelter: [0, -2.4] as readonly [number, number],
-  lantern: [0.1, 2.42, -1.15] as Triple,
-  booth: [3.9, -1.7] as readonly [number, number],
-  /** The receiver's rest on its hook, relative to the booth. */
-  hook: [-0.24, 1.52, -0.24] as Triple,
-  boothSign: [0, 2.62, 0.52] as Triple,
-  pole: [-3.7, 0.3] as readonly [number, number],
-  /** Heights of the four planks nailed to the pole, top to bottom. */
-  planks: [2.08, 1.72, 1.36, 1.0],
-  plank: { width: 1.5, height: 0.3 },
-  /** The timetable board on the shelter's back wall. */
-  notice: [-1.3, 1.75, -3.27] as Triple,
+/** The driver's cab, at the front of the front car. Measured from the middle of that car, heights from its floor. */
+export const CAB = {
+  back: 1.4,
+  front: 4.2,
+  /** The windows run from the sill to the head. */
+  sill: 1.22,
+  head: 2.0,
+  /** The near edge of the desk. */
+  desk: 3.45,
+  /** The face of the board the dials are set in, and the height of their middles. */
+  dials: [3.98, 1.06] as const,
+  /** Where the levers stand on the desk, and the height they turn about. */
+  levers: [3.66, 0.92] as const,
+  /** The name plates, on the near edge of the desk. */
+  plate: [3.4, 0.9] as const,
+  /** Where the four dials, levers and plates are across the cab. */
+  across: [-0.78, -0.26, 0.26, 0.78],
+  /** The destination board over the windscreen. */
+  board: { y: 2.14, height: 0.26, width: 2.2 },
+  mug: [3.6, 0.9, 1.0] as Triple,
 }

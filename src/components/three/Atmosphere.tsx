@@ -107,7 +107,7 @@ export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: 
     m.dust.lerp(mood.dust ? wanted.set(mood.dust) : DUST, 1 - Math.exp(-long * rate))
     m.mirror = ease(m.mirror, mood.mirror ?? 0.78, long, rate)
     m.shallow = ease(m.shallow, mood.shallow ?? 0, long, rate)
-    // The signpost's request: lean the whole sky toward another time of day.
+    // A request from the scene to lean the whole sky toward another time of day. (Nothing asks at present.)
     m.tint = ease(m.tint, air.tint.amount, long, 2.2)
     if (air.tint.amount > 0) m.tintColour.lerp(wanted.setRGB(air.tint.r, air.tint.g, air.tint.b), 1 - Math.exp(-long * 3))
 

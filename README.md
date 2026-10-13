@@ -1,6 +1,6 @@
 # Otis van der Stelt: portfolio
 
-A portfolio you travel through. One hand-painted 3D world on a flat sea: you board a red train at a floating halt, the train car is the main menu, and each section of the site is a scene you reach by taking a window seat and letting the fog roll over.
+A portfolio you travel through. One hand-painted train crossing a flat sea: you board it at a floating halt, the passenger car is the main menu, and each section of the site is the same train fitted out for one thing, reached by taking a window seat and letting the fog roll over.
 
 Built with Vite, React 19, TypeScript, Tailwind CSS v4, Three.js, React Three Fiber, drei and TanStack Query.
 
@@ -11,9 +11,9 @@ Built with Vite, React 19, TypeScript, Tailwind CSS v4, Three.js, React Three Fi
 | **Stillwater Halt** | Title card | The train waits at a platform floating on a mirror sea. The name, the title and one button: "Board the Train". |
 | **The train** | Main menu | The camera glides in through a window and the train pulls out. Look around the car, then pick a bench or a stop on the route map: the camera walks down the aisle, sits at that window, and fog rolls across the picture. |
 | **The library car** | Projects | The same car fitted out with a great bookcase, the sea still going by outside. Each project is a leather book standing face out on its ledge; choosing one floats it across the aisle and opens it, and its words are set on its own pages, with that repository's figures fetched live from GitHub. |
-| **The clocktower** | About | A stone room behind a great glass clock face, amber light coming through it. Choosing the sketchpad on the drafting table drops the camera to a top-down view of who Otis is, where Otis studies and the timeline so far. |
-| **The signpost** | Skills | One post in a field of dandelion clocks at the edge of the sea. Each of its four plaques turns the camera its way, turns the sky to its own hour, and blows in a sheet of parchment with what lies that way. |
-| **The bus stop** | Contact | A shelter by the sea at night, a lantern, a telephone box lit from inside. Picking up the telephone brings out a notepad that is the contact form; the planks on the pole are links. |
+| **The compartment** | About | Two velvet seats, a table under the window, somebody's luggage. Choosing the journal on the table drops the camera to a top-down view, and who Otis is, where Otis studies and the timeline so far are written on its pages. The tickets along the window are the stops on the way here. |
+| **The driver's cab** | Skills | The front of the train, the line running away ahead over the sea. Four levers, one per kind of work; pull one and its needle swings, and the destination board over the windscreen says what that kind of work is made of. |
+| **The mail car** | Contact | A travelling post office: a sorting frame of pigeonholes over a desk. The card on the desk is the contact form; the four pigeonholes with a name on a brass plate are links. |
 
 Also: it is night after 19:00 by your clock (stars, fireflies, lit windows, a dark page), and the switch in the header changes sun for rain.
 
@@ -31,7 +31,7 @@ Node 22.18 or newer is needed (Vite 8, and `npm run world` runs a TypeScript fil
 
 Useful addresses while working:
 
-- `/#/cabin`, `/#/library`, `/#/tower`, `/#/signpost`, `/#/busstop`, `/#/library/book-2`: open straight at a scene, or at one project's book.
+- `/#/cabin`, `/#/library`, `/#/compartment`, `/#/cab`, `/#/mail`, `/#/library/book-2`: open straight at a car, or at one project's book.
 - `?time=night` or `?time=day`: override the clock.
 - `?mode=backdrop` or `?mode=roam`: force the phone or the desktop behaviour.
 
@@ -39,7 +39,7 @@ Useful addresses while working:
 
 - **About, skills, social links, e-mail address:** `src/content/site.ts`.
 - **Projects:** `public/data/projects.json`. One entry per book on the library's ledge (there are four), each naming a GitHub repository as `owner/name` plus a title, a few words on what it is, a summary and a stack. Stars, forks, issues, languages, dates and the live address are not written here: they are fetched from GitHub when the book is opened.
-- The LinkedIn plank in `src/content/site.ts` points at LinkedIn's front page until the real profile URL is filled in.
+- The LinkedIn pigeonhole in `src/content/site.ts` points at LinkedIn's front page until the real profile URL is filled in.
 
 ## Deploy
 
@@ -54,13 +54,13 @@ The generated model and the Draco decoder are committed, so the asset scripts do
 There are no hand-modelled files. Everything that stands in the world is described in TypeScript in `src/lib/world/` as stacked, painted primitives, and `npm run world` bakes it into one Draco-compressed file:
 
 ```
-public/assets/world.glb   47 named meshes, about 58,000 triangles, 3.1 MB -> 240 KB
+public/assets/world.glb   31 named meshes, about 31,000 triangles, 1.9 MB -> 147 KB
 ```
 
 - `kit.ts`: the modelling kit (blocks, posts, lumpy balls, extrusions, rings), each piece coloured per vertex.
-- `terrain.ts`: the map. Where the line runs, where each scene stands on the sea, how high the signpost's shore is anywhere. The bake and the app both ask it.
+- `terrain.ts`: the map (where the line runs, the stretch the train cruises) and the noise the kit roughens things with.
 - `railway.ts`: the halt, the line, the train and its interior.
-- `scenes.ts`: the library car's bookcase and its books, the clocktower's room, the coast and its signpost, the bus stop.
+- `scenes.ts`: what the train is fitted out with: the library's bookcase and books, the compartment, the mail car's sorting frame, the driver's cab.
 - `spec.ts`: measurements the bake and the app share, such as where lettering goes on a sign.
 
 `npm run draco` copies the glTF Draco decoder from three.js into `public/draco`, so decoding uses files served from this site and not a CDN. `npm run assets` does both.
@@ -79,8 +79,8 @@ Described in full in [DESIGN.md](DESIGN.md). In short: `MeshToonMaterial` with a
 
 `useMode` in `src/hooks/useLayout.ts` is the capability check.
 
-- **Roam** (a wide window with a pointer): a free camera on heavily damped `OrbitControls`, pointer parallax, the train travelling, the walk down the aisle to a window seat, shadows from the lantern.
-- **Backdrop** (touch, a window under 1024 px, or modest hardware): fixed compositions with framings made for a tall screen that breathe slowly, the fog alone between scenes, fewer lights and fewer dandelions. The route map becomes a text menu pinned to the bottom, and each scene's words come up on a sheet above it.
+- **Roam** (a wide window with a pointer): a free camera on heavily damped `OrbitControls`, pointer parallax, the train travelling, the walk down the aisle to a window seat, and the words set on the things in the picture.
+- **Backdrop** (touch, a window under 1024 px, or modest hardware): fixed compositions with framings made for a tall screen that breathe slowly, the fog alone between cars, the train standing still. The route map becomes a text menu pinned to the bottom, and each car's words come up on a sheet above it.
 
 If WebGL is not available at all, every word on the site is still reachable from the route map.
 
@@ -97,21 +97,21 @@ src/
   content/site.ts        everything the site says about its owner
   hooks/                 the capability check; the project and GitHub queries
   lib/
-    places.ts            the scenes, their camera shots and their moods
+    places.ts            the cars, their camera shots and their moods
     train.ts             where the train is and how it moves
     air.ts               the clock, wind, rain, night and fog every shader reads
     tags.ts              the hand-over of paper tags from the scene to the page
     world/               the generated world (see above)
   components/
     World.tsx            the canvas: reads the model, composes the scene
-    three/               atmosphere and sky, sea, railway, the library car and its books, the three scenes off the line, particles, camera rig, materials, the paper pass
-    ui/                  title card, route map, prompts, panels, catalogue and open book (phone), bookmark, sketchpad, signpost sheet, notepad, tags, sprout
+    three/               atmosphere and sky, sea, railway, the library car, the compartment, cab and mail car, writing in the scene, particles, camera rig, materials, the paper pass
+    ui/                  title card, route map, prompts, panels, bookmark, tags, sprout; and for a phone the catalogue and open book, the journal, the levers, the postcard
 ```
 
 ## Notes
 
 - GitHub's API is used without a key, which allows about sixty requests an hour per visitor. Each book costs two and is cached for half an hour. When GitHub refuses, the page says so and offers to ask again.
-- This is the third world the site has had. The first, a valley, is kept under the git tag `valley-v1`; the second, a railway to a coastal town, under `sea-railway-v2`.
+- The site has been through four worlds. The first two are kept under the git tags `valley-v1` and `sea-railway-v2`; the third (the train with a clocktower, a signpost and a bus stop) is in the history at commit `5966374`.
 - In development the scene is exposed as `window.__world`, so it can be stepped by hand (`__world.setFrameloop('never')`, then `__world.advance(seconds)`) when the browser has paused animation in a background tab.
 
 ## Credits

@@ -43,8 +43,6 @@ interface CameraRigProps {
   reducedMotion: boolean
   /** How far the picture is pushed aside to make room for a panel, as fractions of the view: right, up. */
   shift: readonly [number, number]
-  /** Somewhere to turn and look toward, as an offset from the shot's own target. */
-  gaze: readonly [number, number, number] | null
   /** The camera has got somewhere: the place now on screen. */
   onArrive: (place: PlaceId) => void
 }
@@ -74,7 +72,7 @@ const FOG = { over: 1.15, off: 1.5 }
  * the fog alone does the travelling. Once the camera has landed the orbit
  * belongs to the visitor, within what the place allows.
  */
-export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift, gaze, onArrive }: CameraRigProps) {
+export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift, onArrive }: CameraRigProps) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   const size = useThree((s) => s.size)
   const controls = useRef<OrbitControlsImpl>(null)
@@ -87,7 +85,6 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift,
     /** Where the camera is before the pointer leans it. */
     base: new Vector3(),
     lean: new Vector3(),
-    gaze: new Vector3(),
     pointer: { x: 0, y: 0 },
     move: null as Glide | Walk | null,
     /** 0 clear, 1 fog rolling over, 2 fog rolling off. */
@@ -169,7 +166,6 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift,
       // Move the camera itself too, or the free-roam branch below would read its old position straight back.
       camera.position.copy(r.base)
       aim(to, orbit.target)
-      r.gaze.set(0, 0, 0)
       r.fov = to.fov
       r.trainX = train.x
       r.move = null
@@ -245,7 +241,7 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift,
     } else if (roaming && r.fog !== 1) {
       // The controls have just moved the camera; that is the new resting place. Keep it out of the sea.
       r.base.copy(camera.position)
-      if (r.shown === 'halt' || r.shown === 'busstop') r.base.y = Math.max(r.base.y, 0.7)
+      if (r.shown === 'halt') r.base.y = Math.max(r.base.y, 0.7)
     }
 
     if (r.told !== r.shown) {
@@ -253,21 +249,13 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift,
       onArrive(r.shown)
     }
 
-    // Something to turn and look at: the way a plaque is pointing.
-    const settled = !r.move && r.fog === 0
-    a.set(0, 0, 0)
-    if (gaze && settled) a.set(gaze[0], gaze[1], gaze[2])
-    b.copy(r.gaze).lerp(a, 1 - Math.exp(-dt * 2.2))
-    orbit.target.add(a.subVectors(b, r.gaze))
-    r.gaze.copy(b)
-
     // What the visitor may do with the view depends on where they are: a room is not the open sea.
     const held = r.shown === r.place ? r.shot : PLACES[r.shown].view
     orbit.minDistance = held.reach[0]
     orbit.maxDistance = held.reach[1]
     orbit.minPolarAngle = held.tilt[0]
     orbit.maxPolarAngle = held.tilt[1]
-    if (held.swing === undefined || r.move || gaze) {
+    if (held.swing === undefined || r.move) {
       orbit.minAzimuthAngle = -Infinity
       orbit.maxAzimuthAngle = Infinity
     } else {

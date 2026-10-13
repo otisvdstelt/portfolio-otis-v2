@@ -7,14 +7,15 @@ import { air } from '../../lib/air'
 import { DESTINATIONS, PLACES, type Hot, type PlaceId } from '../../lib/places'
 import { runTrain, train } from '../../lib/train'
 import { CAR, HALT } from '../../lib/world/spec'
-import { CRUISE } from '../../lib/world/terrain'
+import { CRUISE, TRACK } from '../../lib/world/terrain'
 import { LETTERING } from './look'
 import { dry, glass, glow, paintedToon } from './materials'
 import { Piece, Tag } from './Piece'
 import { pressable } from './press'
 
-// Telegraph posts stand along the north side of the line, a whole number of them to a lap. Nothing else breaks the sea.
-const POSTS = Array.from({ length: 12 }, (_, i) => (i - 5) * CRUISE.postEvery).filter((x) => x <= 240)
+// Telegraph posts stand along the north side of the line, a whole number of them to a lap, and on ahead until the haze
+// has them: from the cab the line is looked straight along. Nothing else breaks the sea.
+const POSTS = Array.from({ length: 22 }, (_, i) => (i - 5) * CRUISE.postEvery)
 const LAP = CRUISE.to - CRUISE.from
 if (LAP % CRUISE.postEvery !== 0) throw new Error('the posts must stand a whole number of laps apart')
 
@@ -75,8 +76,10 @@ export interface RailwayProps {
   hot: Hot | null
   onHot: (hot: Hot | null) => void
   onVisit: (place: PlaceId) => void
-  /** The library's bookcase and books, while the middle car is the library; null while it is the passenger car. */
-  library: ReactNode
+  /** What the middle car is fitted out with in place of its north benches, or null while it is the passenger car. */
+  fitting: ReactNode
+  /** The driver's cab, while the front of the train is where the visitor is; it stands in for the front car. */
+  cab: ReactNode
 }
 
 /**
@@ -84,7 +87,7 @@ export interface RailwayProps {
  * red train. Its middle car is the hub of the whole site: every other scene
  * is reached from one of its window seats.
  */
-export function Railway({ place, still, hot, onHot, onVisit, library }: RailwayProps) {
+export function Railway({ place, still, hot, onHot, onVisit, fitting, cab }: RailwayProps) {
   const cars = useRef<Group>(null)
   const lamp = useRef<PointLight>(null)
 
@@ -104,6 +107,8 @@ export function Railway({ place, still, hot, onHot, onVisit, library }: RailwayP
   return (
     <>
       <Piece name="Line_Rails" line={0} castShadow={false} />
+      {/* The same rails again, laid on from the end of the first, so the line never stops short of the horizon. */}
+      <Piece name="Line_Rails" line={0} castShadow={false} position={[TRACK.east - TRACK.west, 0, 0]} />
       {POSTS.map((x) => (
         <Piece key={x} name="Line_Post" position={[x, 0, -2.5]} line={0.03} />
       ))}
@@ -117,8 +122,8 @@ export function Railway({ place, still, hot, onHot, onVisit, library }: RailwayP
 
       <group ref={cars}>
         <Car offset={-CAR.pitch} onBoard={board} />
-        <Car offset={0} onBoard={board} seats={{ hot, live: place === 'cabin', onHot, onVisit }} fitting={library ?? undefined} />
-        <Car offset={CAR.pitch} onBoard={board} />
+        <Car offset={0} onBoard={board} seats={{ hot, live: place === 'cabin', onHot, onVisit }} fitting={fitting ?? undefined} />
+        {cab ? <group position={[CAR.pitch, 0, 0]}>{cab}</group> : <Car offset={CAR.pitch} onBoard={board} />}
         <Piece name="Car_Lamps" material={glow} line={0} castShadow={false} position={[CAR.pitch, 0, 0]} />
         <Piece name="Car_Lamps" material={glow} line={0} castShadow={false} position={[-CAR.pitch, 0, 0]} rotation={[0, Math.PI, 0]} />
         <pointLight ref={lamp} position={[0, CAR.ceiling - 0.4, 0]} color="#ffe4bd" intensity={0.9} distance={9} decay={1.6} />

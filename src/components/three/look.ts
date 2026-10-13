@@ -1,9 +1,14 @@
+import bodyFace from '@fontsource/klee-one/files/klee-one-latin-400-normal.woff?url'
+import displayFace from '@fontsource/zen-antique-soft/files/zen-antique-soft-latin-400-normal.woff?url'
+import handFace from '@fontsource/yomogi/files/yomogi-latin-400-normal.woff?url'
+import scriptFace from '@fontsource/homemade-apple/files/homemade-apple-latin-400-normal.woff?url'
+import { BOOK } from '../../lib/world/spec'
 import { Color, Vector3 } from 'three'
 
 /**
  * Eternal golden hour: the sun stands thirty degrees up in the south-west.
- * Low enough for long shadows, and the clocktower is turned so that its
- * clock face looks straight at it.
+ * Low enough for long shadows, and to come in through the south windows
+ * of the train and lie across whatever the car is fitted with.
  */
 export const SUN_DIRECTION = new Vector3(-0.52, 0.5, 0.693).normalize()
 
@@ -34,3 +39,14 @@ export const OUTLINE = { color: '#1c1917', opacity: 0.85, thickness: 0.04 }
 
 /** Lettering painted on wood: dark ink by day, pale paint that still reads by lantern light at night. */
 export const LETTERING = { day: '#2c2823', night: '#f6e9c8' }
+
+
+/** The page's four hands, for anything written inside the world. */
+export const FACES = { body: bodyFace, display: displayFace, hand: handFace, script: scriptFace }
+export type Face = keyof typeof FACES
+
+/** Ink on lit paper: the same at any hour, like the paper sheets on the page (see `.lit` in index.css). */
+export const PAGE_INK = { paper: '#f6ecd3', ink: '#2c2823', soft: '#5e554a', rust: '#8f4526', moss: '#3b533e', rule: '#cdbd97' }
+
+/** The pages of an open book lie level with its cut. The sheet of lit paper is laid a hair above that, and the writing a hair above the sheet. */
+export const PAGE = { sheet: BOOK.thickness / 2 + 0.0012, writing: BOOK.thickness / 2 + 0.0026 }
