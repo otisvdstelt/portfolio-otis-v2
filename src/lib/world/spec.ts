@@ -35,27 +35,27 @@ export const HALT = {
   lamp: [7.2, DECK + 3.1, -5.2] as Triple,
 }
 
-/** A project's book. Closed, it lies flat on its back board with its spine along its west edge; it opens in the middle. */
+/** A leather-bound book, as the modeller builds it. Closed, it lies flat on its back board with its spine along its west edge; it opens in the middle. */
 export const BOOK = { width: 0.42, height: 0.56, thickness: 0.09, board: 0.012 }
 
 /**
- * The library: the middle car of the train, with a great bookcase where its
- * north benches were. Measured from the middle of the car, heights from its floor.
+ * The picture car: the middle car of the train with a screen let down across
+ * its east end. Measured from the middle of the car, heights from its floor.
  */
-export const LIBRARY = {
-  /** The bookcase stands against the north wall, across the two middle windows. */
-  case: { west: -1.38, east: 1.38, back: -1.27, front: -0.98, top: 2.0 },
-  /** The two ordinary shelves, below and above the ledge. */
-  shelves: [0.53, 1.47] as const,
-  /** The ledge the four projects stand on, face out. */
-  ledge: 0.86,
-  /** Where each one stands along it, and how far it leans back against the case. */
-  berths: [-0.84, -0.28, 0.28, 0.84],
-  lean: 0.2,
-  /** Where the middle of an open book comes to rest to be read, how far it is tipped back toward the reader, and how far away the reader's eye is. */
-  lectern: [0.1, 1.36, -0.12] as Triple,
-  tip: 0.42,
-  arm: 0.92,
+export const CINEMA = {
+  /** The screen: where along the car it hangs, how wide it is, and from what height to what height. It hangs a little north of the middle, so the south benches do not stand in front of its corner. */
+  screen: { x: 3.9, z: -0.14, width: 2.06, bottom: 0.48, top: 1.64 },
+  /** The projector's lens, in the aisle. */
+  lens: [-0.3, 1.16, 0] as Triple,
+  /** The hubs of its two reels: how far along the car, and how high. */
+  reels: [
+    [-0.84, 1.52],
+    [-0.5, 1.54],
+  ] as const,
+  /** The rack of film tins: where each stands, the shelf they stand on, and how they are turned to face the aisle. */
+  tins: { xs: [-2.1, -1.74, -1.38, -1.02], shelf: 0.8, z: -1.0, radius: 0.16, turn: -0.7 },
+  /** Where someone watching has their eyes. */
+  seat: [1.72, 1.14, -0.4] as Triple,
 }
 
 /** Somebody's own corner of the middle car, where the north benches were. Measured from the middle of the car, heights from its floor. */
@@ -64,7 +64,7 @@ export const COMPARTMENT = {
   seat: 0.72,
   /** The table under the window post: half its length, the height of its top, its front edge. */
   table: { half: 0.6, top: 0.75, front: -0.7 },
-  /** The journal lies open on the table: the middle of its spread, and its size beside a book of the library. */
+  /** The journal lies open on the table: the middle of its spread, and its size beside the book as the modeller builds it. */
   journal: [0, 0.75, -0.985] as Triple,
   scale: 0.66,
   mug: [0.47, 0.75, -1.08] as Triple,

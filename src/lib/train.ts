@@ -23,15 +23,14 @@ const settle = (from: number, to: number, rate: number, dt: number) => to + (fro
  * Tell the train where its passenger is. `unseen` means the picture is
  * covered at this moment, so the train may be put where the story needs it:
  * already under way, or a little short of the platform it is pulling up to.
- * The library is a car of the train, so it is under way there too. The other
- * scenes are nowhere near the line, and leave the train as it is.
+ * Everywhere but the halt is aboard, so the train is under way there.
  */
 export function sendTrain(place: PlaceId, unseen: boolean) {
   if (place === 'halt') {
     if (unseen && train.state !== 'halt') train.x = -22
     train.state = 'halt'
     train.speed = 0
-  } else if (place === 'cabin' || place === 'library') {
+  } else {
     if (unseen) {
       train.x = CRUISE.from + LAP / 3
       train.speed = CRUISE.speed

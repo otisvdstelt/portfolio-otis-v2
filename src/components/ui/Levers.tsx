@@ -1,4 +1,4 @@
-import { DIVISIONS } from '../../content/site'
+import { DIVISIONS, SOON } from '../../content/site'
 import type { Hot } from '../../lib/places'
 
 interface LeversProps {
@@ -33,7 +33,7 @@ export function Levers({ pulled, onHot, onLever }: LeversProps) {
             >
               <span className="way-dab" aria-hidden="true" />
               <span className="way-name">{division.name}</span>
-              <span className="way-skills">{division.skills.join(', ')}</span>
+              <span className="way-skills">{division.skills.length > 0 ? division.skills.join(', ') : SOON}</span>
             </button>
           </li>
         ))}

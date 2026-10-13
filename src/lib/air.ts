@@ -21,6 +21,8 @@ export const air = {
    * fog rolling on and off the far side.
    */
   wipe: { value: 0 },
+  /** How far up the train's own lamps are turned, 0..1. The picture car turns them down while the lantern is running. */
+  house: { value: 1 },
   /**
    * A colour the sky is being asked to lean toward, and how far (0..1). The
    * Nothing sets it at present; it is kept for a scene that wants its own hour.

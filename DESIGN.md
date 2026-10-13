@@ -22,10 +22,10 @@ One flat sea at `y = 0`, with nothing on it but the line: rails along `z = 0` an
 | --- | --- | --- | --- |
 | Stillwater Halt | `x = 0` | Title card | A bleached plank platform floating on barrels, a name board, a lamp, one tall mast. The train pulls in here as the picture appears. |
 | The train | the middle car | Home | Red railcars with cream bands and barrel roofs. The middle car is the hub: its four north benches are the four destinations. |
-| The library car | the middle car | Projects | A walnut bookcase across the two middle windows, card-catalogue drawers, low shelves under the windows either side, a globe, a reading lamp, a ginger cat asleep in the sun. Four great leather books stand face out on a baize-backed ledge, one per project. |
-| The compartment | the middle car | About | Two deep velvet seats facing each other across a table under the window post: curtains, a wall lamp, an open suitcase, a coat, a trunk on the rack. A journal lies open on the table, and five punched tickets are tucked along the window, one for each stop on the way here. |
-| The driver's cab | the front of the front car | Skills | A windscreen in three panes with the line running away ahead, a walnut desk with four brass dials and four levers, a name plate under each, a destination board over the glass, a brake wheel, a whistle cord, a flask and a mug. |
-| The mail car | the middle car | Contact | A sorting frame of pigeonholes over a deep desk: letters, an oil lamp, scales, a stamp and its pad, a brass slot marked POST, sacks and parcels. Four pigeonholes carry a name on a brass plate. A card lies on the desk. |
+| The picture car | the middle car | Projects | A pale screen let down across the east end, a brass-bound lantern projector on a wooden tripod in the aisle, a cabinet of shallow drawers with a rack of film tins on it. Each project is a tin with its name on the label. |
+| The compartment | the middle car | About | Two deep velvet seats facing each other across a table under the window post: curtains, a wall lamp, a trunk on the rack, a rug. A journal lies open on the table beside a pot plant and a mug of tea, and five punched tickets are tucked along the window, one for each stop on the way here. |
+| The driver's cab | the front of the front car | Skills | A windscreen in three panes with the line running away ahead, a walnut desk with four brass dials and four levers, a name plate under each, a destination board over the glass, a brake wheel, a whistle cord, a mug. |
+| The mail car | the middle car | Contact | A sorting frame of pigeonholes over a deep desk: letters, an oil lamp, scales, a stamp and its pad, a brass slot marked POST, parcels on low racks. Four pigeonholes carry a name on a brass plate. A card lies on the desk. |
 
 While someone rides, the train runs round the stretch from 80 to 200 for ever. The posts stand a whole number to a lap and the sea's surface pattern is measured along the journey, not along the map, so the jump at the end of a lap cannot be seen, even looking straight down the line from the cab.
 
@@ -47,15 +47,15 @@ The world's own palette is in `src/lib/world/palette.ts`. Its sky is not a token
 
 **Night.** After 19:00 by the visitor's clock `data-theme="night"` is set on the root and Tailwind's `dark:` variant follows it. Paper becomes `#171b2e`, ink `#f3ead8`; the sky goes to indigo with stars, lamps turn up, dust becomes fireflies.
 
-**Lit paper.** Paper under a lamp stays paper at any hour. The pages of the open book and of the journal (in the scene), and the postcard and the phone's sheets of them (on the page, `.lit`), keep their day paper and ink, so they read the same at night.
+**Lit paper.** Paper under a lamp stays paper at any hour. The lit screen and the pages of the journal (in the scene), and the postcard and the phone's sheets (on the page, `.lit`), keep their day paper and ink, so they read the same at night.
 
 ## Type
 
 Four hands, each for one job.
 
 - **Homemade Apple** (script): the name on the title card and the first line of the journal. A fountain-pen hand; it is given loose leading and open word-spacing, never tightened.
-- **Zen Antique Soft** (display): words that are printed, engraved or painted: panel titles, the stops on the route map, book titles, the brass plates in the cab and the mail car, the destination board, buttons.
-- **Klee One** (body, 400 and 600): everything that is read, on the page and on the pages of the open book. A pen-written textbook hand, 17 px, 1.65 leading.
+- **Zen Antique Soft** (display): words that are printed, engraved or painted: panel titles, the stops on the route map, the title card on the screen, the labels on the tins, the brass plates in the cab and the mail car, the destination board, buttons.
+- **Klee One** (body, 400 and 600): everything that is read, on the page, on the screen and in the journal. A pen-written textbook hand, 17 px, 1.65 leading.
 - **Yomogi** (hand): labels and notes: tags in the world, the years on the tickets, the menu on a phone, margins.
 
 Self-hosted latin subsets via Fontsource. The same faces are used for lettering inside the 3D scene, so a sign in the world and a heading on the page are in one hand.
@@ -76,7 +76,7 @@ Self-hosted latin subsets via Fontsource. The same faces are used for lettering 
 - **Boarding.** One unbroken camera move: down from the wide view, across the platform, in through a window and into the aisle. The train waits two and a half seconds, then pulls out.
 - **Taking a seat.** Choosing a destination from the passenger car walks the camera down the aisle (eyes ahead, a slight step in the height), then slides it across into the seat facing that destination's window. The whole walk is measured from the moving train.
 - **The fog.** The moment the camera settles at the window, a bank of fog rolls across the picture from the left with a soft, noisy front; behind it the car is refitted, and the fog rolls on off the right. Every other change of place is this fog alone.
-- **The book.** Pointed at, it rises off its ledge and tips forward. Chosen, it floats out across the aisle, tips back toward the reader's eye and, once it has all but arrived, opens itself in the middle; its words come up out of the paper as it finishes opening. It closes before it starts back.
+- **The lantern.** Pointed at, a tin lifts out of the rack. Chosen, the camera takes a seat in front of the screen; the train's lamps go down, evening falls outside and the stars come out; the reels turn, a short beam shows in the dust, and the screen lights with a slight flicker. A title card holds for two seconds, then gives way to a still of the project with its words beside it. Stopping it brings the day and the lamps back.
 - **The journal and the card.** Choosing either drops the camera to a strict top-down view. The journal's words come up out of its pages as the camera arrives; the postcard is laid over the card.
 - **The cab.** A lever at rest leans back toward the driver. Pulled, it goes forward, its needle swings across its dial, and the board over the windscreen changes from the name of the line to the name of the division and what it is made of. Needles tremble a little all the time.
 - **Small life.** Tea steams, lamps flicker slightly, a pointed-at ticket lifts out of the window frame and says where it was for, dust rises in the sun and turns to fireflies at night.
@@ -86,7 +86,7 @@ Self-hosted latin subsets via Fontsource. The same faces are used for lettering 
 
 Words in the scene are live text in the same four faces as the page (`three/Writing.tsx`): they are measured as they are set, so a paragraph on a page can run to as many lines as it needs. Everything said in the scene is also in the page, for the keyboard, for screen readers and for phones.
 
-- **The open book** (in the scene): volume, title, what it is, a summary and what it is built with on the left page; the language blend as one brush stroke, GitHub's figures and the two addresses on the right. The addresses and "close the book" can be pressed.
+- **The screen** (in the scene, `three/Cinema.tsx`): a title card (reel, title, what it is), then a still of the project on the left with the language blend as one brush stroke, when it was last worked on and its two addresses under it, and on the right its title, what it is, a summary and what it is built with. The addresses and "stop the projector" can be pressed.
 - **The journal** (in the scene): who Otis is, where Otis studies and what Otis does away from the screen on the left page; the timeline and how Otis works on the right.
 - **The destination board, the plates, the tickets** (in the scene): a division and its skills; the names of the divisions and of the four links; the years.
 - **Slip** (`.slip.paper`): a scrap of paper for the name, the weather switch, a hint and each panel's close button. Slightly crooked.
@@ -95,7 +95,7 @@ Words in the scene are live text in the same four faces as the page (`three/Writ
 - **Prompts** (`.prompts`): what a car offers, as words on a scrap beside it. The things themselves can be pressed in the picture; this gives the keyboard the same reach.
 - **Bookmark** (`.bookmark`): the links of whatever lies open and the way to close it, for the keyboard. It stays out of sight until the keyboard reaches it.
 - **Postcard** (`.postcard`): the one thing that must be typed into, so it is laid over the card on the desk: the message on one half, the address on the other with the line's frank in the corner, fields written straight onto ruled lines, a terracotta "Drop it in the slot".
-- **On a phone** the picture is too small to read, so the same words come up on sheets: the catalogue and the open book (`.volume`, `.tome`), the journal (`.sketchpad`), the levers (`.way`), the postcard.
+- **On a phone** the picture is too small to read, so the same words come up on sheets: the programme and a project's pages with its still pasted in (`.volume`, `.tome`), the journal (`.sketchpad`), the levers (`.way`), the postcard.
 - **Tag** (`.tag`): a paper label pinned to something in the world.
 - **Inked button** (`.inked`): a pen outline with uneven corners that fills when pressed toward.
 - **Sprout** (`.sprout`): a small watercolour plant in the corner that grows while anything is being fetched. It is the whole of the loading state.
@@ -110,4 +110,4 @@ There are no icons anywhere. Controls are words.
 
 ## Voice
 
-Labels name the thing or the action in the scene's own terms: "Board the Train", "Read the journal", "close the book", "Write a postcard", "Drop it in the slot", "put the card down". Errors say what happened and what to do: "GitHub is rationing its answers for the moment. Try again in a little while."
+Labels name the thing or the action in the scene's own terms: "Board the Train", "stop the projector", "Read the journal", "Write a postcard", "Drop it in the slot", "put the card down". Errors say what happened and what to do: "GitHub is rationing its answers for the moment. Try again in a little while."

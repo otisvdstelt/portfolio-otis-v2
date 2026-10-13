@@ -2,7 +2,7 @@ import { Text } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { Suspense, useMemo, useRef, type RefObject } from 'react'
 import { MathUtils, type Group, type PointLight } from 'three'
-import { ABOUT, DIVISIONS, LINKS, OWNER } from '../../content/site'
+import { ABOUT, DIVISIONS, LINKS, OWNER, SOON } from '../../content/site'
 import { air } from '../../lib/air'
 import type { Hot, PlaceId } from '../../lib/places'
 import { BOOK, CAB, CAR, COMPARTMENT, MAIL } from '../../lib/world/spec'
@@ -23,7 +23,7 @@ const swallow = { onClick: (event: ThreeEvent<MouseEvent>) => event.stopPropagat
 
 // ------------------------------------------------------------ the compartment (about)
 
-// The journal is a book of the library made smaller, so its pages are measured the same way.
+// The journal is the modeller's book made smaller, so its pages are measured in the book's own units.
 const COLUMN = 0.32
 const LEAF = [W - 0.022, H - 0.036] as const
 const LEFT = -1.5 * W + 0.058
@@ -145,7 +145,7 @@ export function Compartment({ here, open, reading, hot, onHot, onVisit, onClose 
       <Piece name="Compartment_Fittings" material={dry} line={0.008} />
       <Piece name="Compartment_Glow" material={glow} line={0} castShadow={false} />
 
-      {/* The journal: a book of the library made smaller, lying open with its hinge in the middle of the table. */}
+      {/* The journal: the modeller's book made smaller, lying open with its hinge in the middle of the table. */}
       <group position={[jx + (W / 2) * s, FLOOR + jy + 0.002, jz]} scale={s}>
         <Piece name="Book_Back" material={leather} line={0.006} {...take} />
         <Piece name="Book_LeavesRight" material={dry} line={0.003} {...take} />
@@ -303,7 +303,7 @@ function Control({ index, z, name, pulled, live, onHot, onLever }: ControlProps)
         <Piece name="Cab_Lever" hung material={dry} line={0.005} />
       </group>
       <Suspense fallback={null}>
-        <Text font={FACES.display} fontSize={0.036} color="#2b2521" anchorX="center" anchorY="middle" position={[CAB.plate[0] - 0.007, FLOOR + CAB.plate[1], z]} rotation={[0, -QUARTER, 0]}>
+        <Text font={FACES.display} fontSize={name.length > 10 ? 0.03 : 0.036} color="#2b2521" anchorX="center" anchorY="middle" position={[CAB.plate[0] - 0.007, FLOOR + CAB.plate[1], z]} rotation={[0, -QUARTER, 0]}>
           {name}
         </Text>
       </Suspense>
@@ -338,7 +338,7 @@ export function Cab({ chosen, here, onHot, onLever }: CabProps) {
       <Piece name="Cab_Glass" material={glass} line={0} castShadow={false} />
       <Piece name="Cab_Glow" material={glow} line={0} castShadow={false} />
       {CAB.across.slice(0, DIVISIONS.length).map((z, index) => (
-        <Control key={z} index={index} z={z} name={DIVISIONS[index].plaque} pulled={chosen === index} live={here} onHot={onHot} onLever={onLever} />
+        <Control key={z} index={index} z={z} name={DIVISIONS[index].name} pulled={chosen === index} live={here} onHot={onHot} onLever={onLever} />
       ))}
       <Suspense fallback={null}>
         <Text font={FACES.display} fontSize={division ? 0.078 : 0.086} letterSpacing={0.02} color={PAGE_INK.ink} anchorX="center" anchorY="middle" position={[front - 0.118, FLOOR + board.y + (division ? 0.05 : 0), 0]} rotation={[0, -QUARTER, 0]}>
@@ -346,7 +346,7 @@ export function Cab({ chosen, here, onHot, onLever }: CabProps) {
         </Text>
         {division && (
           <Text font={FACES.hand} fontSize={0.052} color={PAGE_INK.rust} maxWidth={board.width - 0.1} textAlign="center" anchorX="center" anchorY="middle" position={[front - 0.118, FLOOR + board.y - 0.058, 0]} rotation={[0, -QUARTER, 0]}>
-            {division.skills.join('  ·  ')}
+            {division.skills.length > 0 ? division.skills.join('  ·  ') : SOON}
           </Text>
         )}
       </Suspense>

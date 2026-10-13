@@ -19,17 +19,17 @@ import { isDestination, isPlaceId, PLACES, type Hot, type PlaceId } from './lib/
 // title and the sprout paint from this small one before it arrives.
 const World = lazy(() => import('./components/World'))
 
-const BOOKS = 4
+const REELS = 4
 
-/** The address names the car, and in the library the book: `#/cab`, `#/library/book-2`. */
+/** The address names the car, and in the picture car the reel: `#/cab`, `#/cinema/reel-2`. */
 function readAddress(): { place: PlaceId; tome: number | null } {
   const [, first = '', second = ''] = window.location.hash.split('/')
   const place = isPlaceId(first) ? first : 'halt'
-  const book = Number(second.replace('book-', '')) - 1
-  return { place, tome: place === 'library' && Number.isInteger(book) && book >= 0 && book < BOOKS ? book : null }
+  const reel = Number(second.replace('reel-', '')) - 1
+  return { place, tome: place === 'cinema' && Number.isInteger(reel) && reel >= 0 && reel < REELS ? reel : null }
 }
 
-const addressOf = (place: PlaceId, tome: number | null = null) => (place === 'halt' ? window.location.pathname + window.location.search : `#/${place}${tome === null ? '' : `/book-${tome + 1}`}`)
+const addressOf = (place: PlaceId, tome: number | null = null) => (place === 'halt' ? window.location.pathname + window.location.search : `#/${place}${tome === null ? '' : `/reel-${tome + 1}`}`)
 
 /** If the world cannot be drawn (no WebGL, a failed download) the words must still be reachable. */
 class Unpaintable extends Component<{ onFail: () => void; children: ReactNode }, { failed: boolean }> {
@@ -72,7 +72,7 @@ export default function App() {
   }, [place, open, tome])
   const seats = useQuery(seatsQuery).data
   const volumes = useMemo(() => seats?.map(({ title, kind }) => ({ title, kind })) ?? [], [seats])
-  // The words of whichever book is open, with GitHub's figures for it.
+  // What there is to say about whichever project is in the lantern, with GitHub's figures for it.
   const { leaves, ask } = useLeaves(tome === null ? undefined : seats?.[tome], tome)
 
   // On a phone, and wherever the world cannot be drawn, every car's words come up on a sheet as soon as the visitor is there.
@@ -111,21 +111,21 @@ export default function App() {
     arrival.current = window.setTimeout(() => setWhere((then) => (then.place === at ? { ...then, open: true } : then)), 1100)
   }, [])
 
-  /** Take one book down and open it. */
+  /** Put one project in the lantern. */
   const showProject = useCallback((index: number) => {
     window.clearTimeout(arrival.current)
     setHot(null)
-    window.history.pushState(null, '', addressOf('library', index))
-    setWhere((then) => ({ place: 'library', open: then.place === 'library' && then.open, tome: index }))
+    window.history.pushState(null, '', addressOf('cinema', index))
+    setWhere((then) => ({ place: 'cinema', open: then.place === 'cinema' && then.open, tome: index }))
   }, [])
 
-  /** Put away whatever is being read: the open book, or else the journal or the card. */
+  /** Put away whatever is out: the picture on the screen, or else the journal or the card. */
   const close = useCallback(() => {
     if (where.current.tome === null) {
       setWhere((then) => ({ ...then, open: false }))
       return
     }
-    window.history.replaceState(null, '', addressOf('library'))
+    window.history.replaceState(null, '', addressOf('cinema'))
     setWhere((then) => ({ ...then, tome: null }))
   }, [])
 
@@ -150,7 +150,7 @@ export default function App() {
     }
   }, [sheets, painted])
 
-  // Escape puts away whatever is out. (On a phone the open book is a dialog and handles Escape itself.)
+  // Escape puts away whatever is out. (On a phone the project's pages are a dialog, which handles Escape itself.)
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
@@ -174,9 +174,9 @@ export default function App() {
 
   // What can be done here, in words, for a wide screen. (On a phone the same things are on the car's sheet.)
   const prompts: { title: string; list: Prompt[] } =
-    place === 'library'
+    place === 'cinema'
       ? {
-          title: 'Face out on the ledge',
+          title: volumes.length === 1 ? 'One tin in the rack' : 'In the rack',
           list: volumes.map(({ title, kind }, index) => ({
             label: title,
             note: kind,
@@ -254,9 +254,9 @@ export default function App() {
         <Hint shown={place === 'cabin' && arrived && painted}>{compact ? 'Pick a stop below, and take a window seat.' : 'Look around. Then pick a bench, or a stop on the route map.'}</Hint>
 
         {!sheets && <Prompts shown={isDestination(place) && arrived && !open && tome === null} title={prompts.title} prompts={prompts.list} />}
-        {/* On a wide screen the book and the journal carry their own words in the picture; these are their ribbons. */}
+        {/* On a wide screen the screen and the journal carry their own words in the picture; these are their ribbons. */}
         {!sheets && (
-          <Bookmark shown={arrived && leaves !== null} label={`${leaves?.title ?? 'The book'}: links`} links={leaves ? [...(leaves.live ? [{ label: 'open the live site', href: leaves.live }] : []), { label: 'read the source', href: leaves.source }] : []} closeLabel="close the book" onClose={close}>
+          <Bookmark shown={arrived && leaves !== null} label={`${leaves?.title ?? 'The picture'}: links`} links={leaves ? [...(leaves.live ? [{ label: 'open the live site', href: leaves.live }] : []), { label: 'read the source', href: leaves.source }] : []} closeLabel="stop the projector" onClose={close}>
             {leaves && (
               <>
                 <h2>
@@ -278,7 +278,7 @@ export default function App() {
         )}
 
         {sheets && (
-          <Panel open={at('library') && tome === null} label="Projects" closeLabel="put the catalogue away" onClose={close}>
+          <Panel open={at('cinema') && tome === null} label="Projects" closeLabel="put the programme away" onClose={close}>
             <Catalogue hot={hot} onHot={setHot} onProject={showProject} />
           </Panel>
         )}

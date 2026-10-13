@@ -1242,6 +1242,18 @@
     }
   }
 
+  /* A still of the project, pasted in at the head of the page like a photograph. */
+  .leaf-still {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    margin: 0 0 1rem;
+    object-fit: cover;
+    border: 0.4rem solid var(--color-canvas);
+    box-shadow: 0 1px 0 var(--color-rule), 0 0.5rem 0.9rem -0.4rem rgb(40 22 12 / 0.5);
+    rotate: -0.6deg;
+  }
+
   .leaf-number {
     margin: 0 0 0.5rem;
     font-family: var(--font-hand);

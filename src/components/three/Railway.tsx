@@ -99,7 +99,7 @@ export function Railway({ place, still, hot, onHot, onVisit, fitting, cab }: Rai
       // A little life in the springs while it is under way.
       cars.current.position.y = still ? 0 : Math.sin(air.time.value * 7.3) * 0.004 * Math.min(1, train.speed / 4)
     }
-    if (lamp.current) lamp.current.intensity = 0.9 + air.night.value * 6
+    if (lamp.current) lamp.current.intensity = (0.9 + air.night.value * 6) * air.house.value
   }, -4)
 
   const board = place === 'halt' ? () => onVisit('cabin') : undefined

@@ -3,14 +3,14 @@ import { EffectComposer } from '@react-three/postprocessing'
 import { use, useEffect, useState } from 'react'
 import type { Leaves } from '../hooks/useProjects'
 import type { Phase, Weather } from '../lib/air'
-import { PLACES, type Hot, type PlaceId } from '../lib/places'
+import { PLACES, type Hot, type Mood, type PlaceId } from '../lib/places'
 import { Motes, Rain } from './three/Air'
 import { lettering, PartsContext, useWorldModel } from './three/assets'
 import { Atmosphere, Sky } from './three/Atmosphere'
 import { CameraRig } from './three/CameraRig'
 import { Cab, Compartment, MailCar } from './three/Cars'
+import { Cinema, type Volume } from './three/Cinema'
 import { InkPaper } from './three/InkPaper'
-import { LibraryCar, type Volume } from './three/Library'
 import { MEADOW_LAYER } from './three/look'
 import { Railway } from './three/Railway'
 import { Sea } from './three/Sea'
@@ -27,11 +27,11 @@ export interface WorldProps {
   weather: Weather
   reducedMotion: boolean
   hot: Hot | null
-  /** The projects on the library's ledge, one per book. */
+  /** The projects in the picture car's rack, one per tin. */
   volumes: readonly Volume[]
-  /** The book that is open, or null. */
+  /** The project in the lantern, or null. */
   tome: number | null
-  /** What is written in it. */
+  /** What there is to say about it. */
   leaves: Leaves | null
   /** The lever of the cab being pointed at or left pulled, or -1. */
   lever: number
@@ -41,9 +41,9 @@ export interface WorldProps {
   onVisit: (place: PlaceId, open?: boolean) => void
   onProject: (index: number) => void
   onLever: (index: number) => void
-  /** Put away whatever is being read: the open book, the journal, the card. */
+  /** Put away whatever is out: the picture on the screen, the journal, the card. */
   onClose: () => void
-  /** Ask GitHub for the open book's figures again. */
+  /** Ask GitHub for the project's figures again. */
   onAsk: () => void
   /** The camera has reached a place. */
   onArrive: (place: PlaceId) => void
@@ -52,6 +52,9 @@ export interface WorldProps {
 }
 
 // What each kind of device is asked to draw.
+/** While the lantern is running it is evening outside, whatever the hour. */
+const SHOWING: Mood = { night: true }
+
 const BUDGET = {
   roam: { dpr: [1, 1.75] as [number, number], motes: 170, rain: 1500, shadow: 2048, mirror: 1024 },
   backdrop: { dpr: [1, 1.5] as [number, number], motes: 90, rain: 700, shadow: 1024, mirror: 512 },
@@ -78,7 +81,7 @@ export default function World({ place, open, mode, phase, weather, reducedMotion
   // Until someone boards, the first view is a title card and the camera is not theirs to move.
   const roaming = mode === 'roam' && place !== 'halt'
   const cuts = mode === 'backdrop' || reducedMotion
-  const reading = place === 'library' ? tome !== null : open
+  const reading = place === 'cinema' ? tome !== null : open
 
   useEffect(() => {
     onReady()
@@ -91,8 +94,8 @@ export default function World({ place, open, mode, phase, weather, reducedMotion
 
   // What stands where the middle car's north benches would be.
   const fitting =
-    shown === 'library' ? (
-      <LibraryCar volumes={volumes} chosen={tome} leaves={leaves} hot={hot} here={here} reducedMotion={reducedMotion} onHot={onHot} onProject={onProject} onClose={onClose} onAsk={onAsk} />
+    shown === 'cinema' ? (
+      <Cinema volumes={volumes} chosen={tome} leaves={leaves} hot={hot} here={here} reducedMotion={reducedMotion} onHot={onHot} onProject={onProject} onClose={onClose} onAsk={onAsk} />
     ) : shown === 'compartment' ? (
       <Compartment here={here} open={here && open} reading={here && open && mode === 'roam'} hot={hot} onHot={onHot} onVisit={onVisit} onClose={onClose} />
     ) : shown === 'mail' ? (
@@ -117,7 +120,7 @@ export default function World({ place, open, mode, phase, weather, reducedMotion
       onPointerMissed={() => mode === 'roam' && reading && onClose()}
     >
       <PartsContext value={parts}>
-        <Atmosphere phase={phase} mood={PLACES[shown].mood} weather={weather} reducedMotion={reducedMotion} shadowSize={budget.shadow} />
+        <Atmosphere phase={phase} mood={shown === 'cinema' && here && tome !== null ? SHOWING : PLACES[shown].mood} weather={weather} reducedMotion={reducedMotion} shadowSize={budget.shadow} />
         <Sky reducedMotion={reducedMotion} />
         <Sea resolution={budget.mirror} />
         <Railway place={place} still={cuts} hot={hot} onHot={onHot} onVisit={onVisit} fitting={fitting} cab={shown === 'cab' ? <Cab chosen={here ? lever : -1} here={here} onHot={onHot} onLever={onLever} /> : null} />

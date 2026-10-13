@@ -121,5 +121,5 @@ export const PAINT = {
 /** The colours potions come in. */
 export const JEWELS = [PAINT.ruby, PAINT.emerald, PAINT.sapphire, PAINT.honey, PAINT.violet, PAINT.teal, PAINT.rose, PAINT.lime] as const
 
-/** The leather each project's book in the library is bound in, first to last: the paint on the model and the cover on the page are the same four. */
+/** The colour of each project's label in the picture car's rack, first to last: the paint on the tin and the cover on the phone's page are the same four. */
 export const LEATHERS = ['#93333a', '#2f5d48', '#34578f', '#a06c22'] as const

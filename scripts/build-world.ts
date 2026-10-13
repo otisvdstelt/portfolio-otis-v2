@@ -12,11 +12,11 @@ import { draco } from '@gltf-transform/functions'
 import draco3d from 'draco3dgltf'
 import type { Part } from '../src/lib/world/kit.ts'
 import { buildCar, buildHalt, buildLine } from '../src/lib/world/railway.ts'
-import { buildCab, buildClouds, buildCompartment, buildLibrary, buildMail } from '../src/lib/world/scenes.ts'
+import { buildBook, buildCab, buildCinema, buildClouds, buildCompartment, buildMail } from '../src/lib/world/scenes.ts'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
-const parts: Part[] = [...buildLine(), ...buildHalt(), ...buildCar(), ...buildClouds(), ...buildLibrary(), ...buildCompartment(), ...buildMail(), ...buildCab()]
+const parts: Part[] = [...buildLine(), ...buildHalt(), ...buildCar(), ...buildClouds(), ...buildCinema(), ...buildBook(), ...buildCompartment(), ...buildMail(), ...buildCab()]
 
 const doc = new Document()
 doc.getRoot().getAsset().generator = 'portfolio-otis build-world.ts'

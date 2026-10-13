@@ -88,7 +88,7 @@ const seaShader = {
 }
 
 /**
- * The sea: endless, perfectly flat, and a real mirror (how much of one is up to the scene: the library stands in shallow water you can see into). The world is drawn a
+ * The sea: endless, perfectly flat, and a real mirror (how much of one is up to the scene: a scene may stand in shallow water you can see into). The world is drawn a
  * second time from under the surface into a texture, and the water shows that
  * picture with long horizontal strokes dragged through it. The sheet of
  * water follows the camera, so there is always more of it.

@@ -1,7 +1,7 @@
 import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
-/** One seat in the train. The file is public/data/projects.json: one entry per bench, in order along the car. */
+/** One project. The file is public/data/projects.json: one entry per tin in the picture car's rack, in order (there is room for four). */
 export interface Seat {
   id: string
   /** The repository on GitHub, as `owner/name`. Its figures are fetched live. */
@@ -12,6 +12,8 @@ export interface Seat {
   /** In Otis's own words. Shown as it is; GitHub's description is used only when this is empty. */
   summary: string
   stack: string[]
+  /** A still of it for the screen, as a path under public/. Left out, the screen says there is no picture yet. */
+  image?: string
 }
 
 async function fetchSeats(): Promise<Seat[]> {
@@ -115,7 +117,7 @@ export const repositoryQuery = (repo: string) =>
 
 export const useRepository = (repo: string | undefined) => useQuery({ ...repositoryQuery(repo ?? ''), enabled: Boolean(repo) })
 
-/** Everything written inside one project's book, as plain words: the scene sets them on its pages, the page reads them out. */
+/** Everything there is to say about one project, as plain words: the scene throws them on the screen, the page reads them out. */
 export interface Leaves {
   /** "Volume II" */
   volume: string
@@ -128,6 +130,8 @@ export interface Leaves {
   /** Where it runs, if anywhere, and where its source is. */
   live: string | null
   source: string
+  /** A still of it, as an address the page can load, or null. */
+  image: string | null
 }
 
 export const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI']
@@ -152,7 +156,7 @@ export function useLeaves(seat: Seat | undefined, index: number | null): { leave
         ? { trouble: error instanceof Refused ? error.message : 'GitHub could not be reached. Check your connection.' }
         : { waiting: true }
     return {
-      volume: `Volume ${NUMERALS[index] ?? index + 1}`,
+      volume: `Reel ${NUMERALS[index] ?? index + 1}`,
       title: seat.title,
       kind: seat.kind,
       summary: seat.summary || data?.description || 'No description has been written for this one yet.',
@@ -160,6 +164,7 @@ export function useLeaves(seat: Seat | undefined, index: number | null): { leave
       figures,
       live: data?.homepage ?? null,
       source: data?.url ?? `https://github.com/${seat.repo}`,
+      image: seat.image ? `${import.meta.env.BASE_URL}${seat.image}` : null,
     }
   }, [seat, index, data, error])
   return { leaves, ask: () => void refetch() }

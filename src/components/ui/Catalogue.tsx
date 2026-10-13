@@ -28,7 +28,7 @@ function Volumes({ hot, onHot, onProject }: CatalogueProps) {
             onBlur={() => onHot(null)}
           >
             <span className="volume-spine">
-              <span>vol.</span>
+              <span>reel</span>
               <b>{NUMERALS[index]}</b>
             </span>
             <span className="volume-face">
@@ -42,14 +42,14 @@ function Volumes({ hot, onHot, onProject }: CatalogueProps) {
   )
 }
 
-/** The library's catalogue: one entry per book on the ledge. Picking one takes that book down and opens it. */
+/** The picture car's programme: one entry per tin in the rack. Picking one puts it in the lantern. */
 export function Catalogue(props: CatalogueProps) {
   return (
     <div className="paper sheet">
       <h2 className="panel-title" tabIndex={-1} data-autofocus>
-        The catalogue
+        The programme
       </h2>
-      <p className="panel-lede">Four books stand face out on the ledge, one for each project. Pick one and it is taken down and opened.</p>
+      <p className="panel-lede">One tin of film in the rack for each project. Pick one and the lantern shows it.</p>
       <Suspense
         fallback={
           <ul className="volumes" aria-busy="true">
@@ -131,7 +131,8 @@ function Spread({ seat, index, onClose }: { seat: Seat; index: number; onClose: 
       <div className="tome-leaves lit">
         <div className="tome-spread">
           <section className="leaf">
-            <p className="leaf-number">Volume {NUMERALS[index]}</p>
+            {seat.image && <img className="leaf-still" src={`${import.meta.env.BASE_URL}${seat.image}`} alt={`A still of ${seat.title}`} loading="lazy" />}
+            <p className="leaf-number">Reel {NUMERALS[index]}</p>
             <h2 id="tome-title" className="sheet-title">
               {seat.title}
             </h2>
@@ -188,7 +189,7 @@ function Spread({ seat, index, onClose }: { seat: Seat; index: number; onClose: 
                 Everything else on GitHub
               </a>
               <button type="button" className="quiet ml-auto" onClick={onClose}>
-                close the book
+                stop the projector
               </button>
             </div>
           </section>
@@ -210,7 +211,7 @@ interface OpenBookProps {
  * One project, on the two parchment pages of its book, for a phone: there
  * the book in the picture is too small to read, so its pages are laid over
  * it as text. (On a wide screen the words are set on the book itself; see
- * three/Library.tsx.) It is a true modal: it takes the whole of the
+ * three/Cinema.tsx.) It is a true modal: it takes the whole of the
  * visitor's attention and gives it back with Escape, the words at its foot,
  * or a press outside the book.
  */

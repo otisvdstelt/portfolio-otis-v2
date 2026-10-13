@@ -1,7 +1,7 @@
 // Everything the site says about its owner lives here, so it can be edited
 // without touching the world. Projects are the exception: which repositories
-// stand on the library's ledge is listed in public/data/projects.json, and
-// their figures are fetched from GitHub when a book is opened.
+// are in the picture car's rack is listed in public/data/projects.json, and
+// their figures are fetched from GitHub when one is chosen.
 
 export const OWNER = {
   name: 'Otis van der Stelt',
@@ -35,17 +35,20 @@ export const ABOUT = {
 }
 
 /**
- * The four levers in the driver's cab, left to right, one per division of
- * the craft. `plaque` is the few words engraved on the brass plate; `name`
- * is what the board over the windscreen says when the lever is pulled.
+ * The four levers in the driver's cab, left to right. `name` is engraved on
+ * the lever's brass plate and written on the board over the windscreen when
+ * it is pulled; `skills` is what the board lists under it.
+ * TODO(otis): fill in each `skills` list. While a list is empty the board says SOON.
  */
-export const DIVISIONS = [
-  { name: 'Frontend', plaque: 'Frontend', skills: ['React', 'Next.js', 'Tailwind CSS', 'SCSS', 'Bootstrap'] },
-  { name: '3D and Motion', plaque: '3D and Motion', skills: ['Three.js', 'React Three Fiber', 'Blender'] },
-  { name: 'Backend and Data', plaque: 'Backend', skills: ['Node.js', 'Express.js', 'PHP', 'MongoDB', 'MySQL', 'SQLite'] },
-  { name: 'Languages and Tools', plaque: 'Languages', skills: ['TypeScript', 'JavaScript', 'HTML and CSS', 'Git and GitHub', 'Figma', 'Vite', 'Vercel'] },
-] as const
+export const DIVISIONS: readonly { name: string; skills: readonly string[] }[] = [
+  { name: 'Technical skill', skills: [] },
+  { name: 'Backend', skills: [] },
+  { name: 'Frontend', skills: [] },
+  { name: 'Tools', skills: [] },
+]
 
+/** What is shown where a list of skills has not been written yet. */
+export const SOON = 'Text soon to come'
 /**
  * The four named pigeonholes in the mail car, left to right.
  * TODO(otis): the LinkedIn one points at LinkedIn's front page until the real profile URL is filled in.

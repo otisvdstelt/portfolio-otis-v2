@@ -50,6 +50,7 @@ export function Ink({ ink, at, size, face = 'body', colour = PAGE_INK.ink, width
       anchorX={anchor}
       anchorY={from}
       fillOpacity={0}
+      renderOrder={3}
       position={[at[0], PAGE.writing, at[1]]}
       rotation={[-QUARTER, 0, 0]}
       onSync={
@@ -82,7 +83,7 @@ export function Wash({ ink, at, size, colour, strength = 1, lift = PAGE.writing 
     if (paint.current) paint.current.opacity = ink.current * strength
   })
   return (
-    <mesh position={[at[0], lift, at[1]]} rotation={[-QUARTER, 0, 0]}>
+    <mesh position={[at[0], lift, at[1]]} rotation={[-QUARTER, 0, 0]} renderOrder={lift < PAGE.writing ? 1 : 2}>
       <planeGeometry args={[size[0], size[1]]} />
       <meshBasicMaterial ref={paint} color={colour} transparent opacity={0} depthWrite={false} toneMapped={false} />
     </mesh>

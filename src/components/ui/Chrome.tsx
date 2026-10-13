@@ -132,7 +132,7 @@ export interface Prompt {
 
 interface PromptsProps {
   shown: boolean
-  /** A line of introduction in the visitor's margin: "Face out on the ledge". */
+  /** A line of introduction in the visitor's margin: "One tin in the rack". */
   title: string
   prompts: readonly Prompt[]
 }

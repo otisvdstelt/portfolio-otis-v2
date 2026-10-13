@@ -5,30 +5,13 @@
     "title": "Rotom Dex",
     "kind": "A talking 3D character",
     "summary": "An interactive 3D Rotom Dex that scans, reacts and talks: ask it about anything in the Pokémon world and it answers on its own screen, in its own voice.",
-    "stack": ["React 19", "TypeScript", "React Three Fiber", "TanStack Query", "Tailwind CSS v4"]
-  },
-  {
-    "id": "overwatch-league",
-    "repo": "otisvdstelt/overwatch-league",
-    "title": "Overwatch League",
-    "kind": "A tournament site",
-    "summary": "A tournament site for Overwatch.",
-    "stack": ["React", "Next.js", "TypeScript", "MongoDB"]
-  },
-  {
-    "id": "salon-san",
-    "repo": "otisvdstelt/SalonSan",
-    "title": "Salon San",
-    "kind": "A website for a real salon",
-    "summary": "The website of the salon Salon San.",
-    "stack": ["Node.js", "HTML", "JSON data"]
-  },
-  {
-    "id": "pokedex",
-    "repo": "otisvdstelt/pokedex2.0",
-    "title": "Pokédex 2.0",
-    "kind": "A Pokédex on PokéAPI",
-    "summary": "A Pokédex made with PokéAPI, the RESTful Pokémon API.",
-    "stack": ["React", "Node.js", "JavaScript"]
+    "stack": [
+      "React 19",
+      "TypeScript",
+      "React Three Fiber",
+      "TanStack Query",
+      "Tailwind CSS v4"
+    ],
+    "image": "assets/projects/rotom-dex.jpg"
   }
 ]

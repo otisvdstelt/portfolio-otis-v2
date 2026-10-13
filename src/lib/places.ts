@@ -1,17 +1,17 @@
-import { CAR, COMPARTMENT, LIBRARY, MAIL } from './world/spec'
+import { CAR, CINEMA, COMPARTMENT, MAIL } from './world/spec'
 import { DECK } from './world/terrain'
 
 /**
  * Everywhere the camera can be. `halt` is the title card outside the train;
  * `cabin` is the train car, the hub everything else is reached from. The
- * other four are the same train fitted out for one thing each: `library`,
+ * other four are the same train fitted out for one thing each: `cinema`,
  * `compartment` and `mail` are its middle car, and `cab` is its front end.
  */
-export type PlaceId = 'halt' | 'cabin' | 'library' | 'compartment' | 'cab' | 'mail'
+export type PlaceId = 'halt' | 'cabin' | 'cinema' | 'compartment' | 'cab' | 'mail'
 export type Destination = Exclude<PlaceId, 'halt' | 'cabin'>
 
 /** The four destinations, in the order of their benches along the car. */
-export const DESTINATIONS: readonly Destination[] = ['library', 'compartment', 'cab', 'mail']
+export const DESTINATIONS: readonly Destination[] = ['cinema', 'compartment', 'cab', 'mail']
 
 /** The thing under the pointer, or picked from a list. */
 export interface Hot {
@@ -64,12 +64,12 @@ export interface Place {
   view: Shot
   /** The fixed framing on a tall screen. */
   backdrop: Shot
-  /** A closer framing for reading: the open book held at arm's length, the journal and the card seen from straight above. */
+  /** A closer framing: a seat in front of the screen, the journal and the card seen from straight above. */
   reading?: Shot
   mood: Mood
 }
 
-const lectern = LIBRARY.lectern
+const seat = CINEMA.seat
 const journal = COMPARTMENT.journal
 const card = MAIL.card
 /** The cab is in the front car, one car's length ahead of the middle of the train. */
@@ -97,15 +97,15 @@ export const PLACES: Record<PlaceId, Place> = {
     backdrop: { position: [-1.1, DECK + 1.3, 0.95], target: [0.4, DECK + 1.14, -1.3], fov: 74, onTrain: true, reach: [0.6, 3], swing: 1, tilt: [1.0, 1.95] },
     mood: {},
   },
-  library: {
-    name: 'The library car',
+  cinema: {
+    name: 'The picture car',
     role: 'projects',
     short: 'Work',
-    // In the aisle, turned toward the bookcase, with an open window either side of it.
-    view: { position: [-1.45, DECK + 1.46, 0.95], target: [-0.08, DECK + 1.2, -1.2], fov: 60, onTrain: true, reach: [1.5, 3.1], swing: 0.5, tilt: [1.1, 1.8] },
-    backdrop: { position: [0.1, DECK + 1.38, 1.05], target: [0, DECK + 1.2, -1.2], fov: 76, onTrain: true, reach: [1.5, 3.0], swing: 0.4, tilt: [1.1, 1.8] },
-    // An arm's length from the open book, square on to its pages.
-    reading: { position: [lectern[0], DECK + lectern[1] + Math.sin(LIBRARY.tip) * LIBRARY.arm, lectern[2] + Math.cos(LIBRARY.tip) * LIBRARY.arm], target: [lectern[0], DECK + lectern[1], lectern[2]], fov: 40, onTrain: true, reach: [0.6, 1.3], swing: 0.3, tilt: [0.7, 1.5] },
+    // From the end of the aisle, looking down the car: the rack of tins near at hand, the lantern in the middle, the screen at the far end.
+    view: { position: [-3.45, DECK + 1.4, 0.32], target: [0.5, DECK + 1.24, -0.28], fov: 62, onTrain: true, reach: [1.6, 4.6], swing: 0.45, tilt: [1.15, 1.8] },
+    backdrop: { position: [-3.2, DECK + 1.4, 0.2], target: [0.5, DECK + 1.3, -0.5], fov: 80, onTrain: true, reach: [1.6, 4.6], swing: 0.4, tilt: [1.15, 1.8] },
+    // In a seat in front of the lantern, square on to the screen.
+    reading: { position: [seat[0], DECK + seat[1], seat[2]], target: [CINEMA.screen.x, DECK + (CINEMA.screen.top + CINEMA.screen.bottom) / 2, CINEMA.screen.z - 0.04], fov: 40, onTrain: true, reach: [1.7, 2.7], swing: 0.22, tilt: [1.4, 1.75] },
     mood: {},
   },
   compartment: {
