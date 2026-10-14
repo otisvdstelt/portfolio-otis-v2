@@ -45,7 +45,7 @@ Mixed shades: `canvas` `#fcfaf3` (a sheet lying on the paper), `oat` and `rule` 
 
 The world's own palette is in `src/lib/world/palette.ts`. Its sky is not a token: periwinkle `#6f8ad6` overhead to peach `#f6d6c6` at the horizon, and haze is always the horizon's colour, which is why the sea has no edge.
 
-**Night.** After 19:00 by the visitor's clock `data-theme="night"` is set on the root and Tailwind's `dark:` variant follows it. Paper becomes `#171b2e`, ink `#f3ead8`; the sky goes to indigo with stars, lamps turn up, dust becomes fireflies.
+**Night.** When the visitor chooses night in the header ("day / night", beside "sun / rain") `data-theme="night"` is set on the root and Tailwind's `dark:` variant follows it. Paper becomes `#171b2e`, ink `#f3ead8`; the sky goes to indigo with stars, lamps turn up, dust becomes fireflies.
 
 **Lit paper.** Paper under a lamp stays paper at any hour. The lit screen and the pages of the journal (in the scene), and the postcard and the phone's sheets (on the page, `.lit`), keep their day paper and ink, so they read the same at night.
 

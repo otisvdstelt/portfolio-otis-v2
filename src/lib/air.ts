@@ -24,16 +24,37 @@ export const air = {
   /** How far up the train's own lamps are turned, 0..1. The picture car turns them down while the lantern is running. */
   house: { value: 1 },
   /**
-   * A colour the sky is being asked to lean toward, and how far (0..1). The
+   * A colour the sky is being asked to lean toward, and how far (0..1).
    * Nothing sets it at present; it is kept for a scene that wants its own hour.
    */
   tint: { r: 0, g: 0, b: 0, amount: 0 },
 }
 
-/** Night falls at seven and lifts at six, by the visitor's own clock. `?time=day` or `?time=night` overrides it. */
-export function readPhase(now = new Date()): Phase {
+const PHASE_KEY = 'stillwater-hour'
+
+/** The hour the visitor last chose on this device, or day. `?time=day` or `?time=night` overrides it. */
+export function readPhase(): Phase {
   const asked = new URLSearchParams(window.location.search).get('time')
   if (asked === 'day' || asked === 'night') return asked
-  const hour = now.getHours()
-  return hour >= 19 || hour < 6 ? 'night' : 'day'
+  try {
+    return window.localStorage.getItem(PHASE_KEY) === 'night' ? 'night' : 'day'
+  } catch {
+    return 'day'
+  }
+}
+
+/** Remember the visitor's choice of hour on this device, and put the page in it. */
+export function keepPhase(phase: Phase) {
+  try {
+    window.localStorage.setItem(PHASE_KEY, phase)
+  } catch {
+    // Storage may be refused (a private window); the choice then lasts as long as the page.
+  }
+  paintPhase(phase)
+}
+
+/** The page's own paper and the browser's bar follow the hour. */
+export function paintPhase(phase: Phase) {
+  document.documentElement.dataset.theme = phase
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', phase === 'night' ? '#171b2e' : '#f7f4eb')
 }

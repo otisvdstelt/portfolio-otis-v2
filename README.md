@@ -15,7 +15,7 @@ Built with Vite, React 19, TypeScript, Tailwind CSS v4, Three.js, React Three Fi
 | **The driver's cab** | Skills | The front of the train, the line running away ahead over the sea. Four levers, one per kind of work; pull one and its needle swings, and the destination board over the windscreen says what that kind of work is made of. |
 | **The mail car** | Contact | A travelling post office: a sorting frame of pigeonholes over a desk. The card on the desk is the contact form; the four pigeonholes with a name on a brass plate are links. |
 
-Also: it is night after 19:00 by your clock (stars, fireflies, lit windows, a dark page), and the switch in the header changes sun for rain.
+Also: the switches in the header choose day or night (stars, fireflies, lit windows, a dark page) and sun or rain. The hour chosen is remembered on that device.
 
 ## Run it
 
@@ -32,7 +32,7 @@ Node 22.18 or newer is needed (Vite 8, and `npm run world` runs a TypeScript fil
 Useful addresses while working:
 
 - `/#/cabin`, `/#/cinema`, `/#/compartment`, `/#/cab`, `/#/mail`, `/#/cinema/reel-1`: open straight at a car, or at one project on the screen.
-- `?time=night` or `?time=day`: override the clock.
+- `?time=night` or `?time=day`: open in that hour, whatever was chosen before.
 - `?mode=backdrop` or `?mode=roam`: force the phone or the desktop behaviour.
 
 ## Change what it says

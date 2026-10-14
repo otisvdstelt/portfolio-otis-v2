@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { OWNER } from '../../content/site'
-import type { Weather } from '../../lib/air'
+import type { Phase, Weather } from '../../lib/air'
 import { PLACES, ROUTE, type PlaceId } from '../../lib/places'
 
 /**
@@ -40,30 +40,46 @@ interface HeaderProps {
   /** At the halt the big title already says the name. */
   atHome: boolean
   weather: Weather
+  phase: Phase
   onHome: () => void
   onWeather: (weather: Weather) => void
+  onPhase: (phase: Phase) => void
 }
 
-/** The top of the page: the name on a scrap of paper, and the weather. */
-export function Header({ atHome, weather, onHome, onWeather }: HeaderProps) {
+/** The top of the page: the name on a scrap of paper, and the hour and the weather, each as two words. */
+export function Header({ atHome, weather, phase, onHome, onWeather, onPhase }: HeaderProps) {
   const raining = weather === 'rain'
+  const dark = phase === 'night'
   return (
     <header className="absolute inset-x-0 top-0 z-[4] flex items-start justify-between gap-4 px-4 pt-4 sm:px-7 sm:pt-6" style={{ pointerEvents: 'none' }}>
       <button type="button" className="slip paper wordmark pointer-events-auto" data-hidden={atHome} tabIndex={atHome ? -1 : 0} aria-hidden={atHome} onClick={onHome}>
         {OWNER.name}
       </button>
-      {/* A switch written as two words: the one that is true is underlined. */}
-      <button type="button" role="switch" aria-checked={raining} aria-label="Rain" className="slip paper weather pointer-events-auto" onClick={() => onWeather(raining ? 'sun' : 'rain')}>
-        <span className="weather-word" data-on={!raining}>
-          sun
-        </span>
-        <span className="weather-sep" aria-hidden="true">
-          /
-        </span>
-        <span className="weather-word" data-on={raining}>
-          rain
-        </span>
-      </button>
+      <div className="flex flex-wrap items-start justify-end gap-2.5">
+        {/* Switches written as two words: the one that is true is underlined. */}
+        <button type="button" role="switch" aria-checked={dark} aria-label="Night" className="slip paper weather pointer-events-auto" onClick={() => onPhase(dark ? 'day' : 'night')}>
+          <span className="weather-word" data-on={!dark}>
+            day
+          </span>
+          <span className="weather-sep" aria-hidden="true">
+            /
+          </span>
+          <span className="weather-word" data-on={dark}>
+            night
+          </span>
+        </button>
+        <button type="button" role="switch" aria-checked={raining} aria-label="Rain" className="slip paper weather pointer-events-auto" onClick={() => onWeather(raining ? 'sun' : 'rain')}>
+          <span className="weather-word" data-on={!raining}>
+            sun
+          </span>
+          <span className="weather-sep" aria-hidden="true">
+            /
+          </span>
+          <span className="weather-word" data-on={raining}>
+            rain
+          </span>
+        </button>
+      </div>
     </header>
   )
 }

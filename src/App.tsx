@@ -12,7 +12,7 @@ import { Tags } from './components/ui/Tags'
 import { DIVISIONS, LINKS, OWNER } from './content/site'
 import { COMPACT, useMediaQuery, useMode } from './hooks/useLayout'
 import { seatsQuery, useLeaves } from './hooks/useProjects'
-import { readPhase, type Weather } from './lib/air'
+import { keepPhase, readPhase, type Phase, type Weather } from './lib/air'
 import { isDestination, isPlaceId, PLACES, type Hot, type PlaceId } from './lib/places'
 
 // three.js, R3F, drei and the post-processing land in their own chunk; the
@@ -49,7 +49,7 @@ export default function App() {
   const mode = useMode()
   const compact = useMediaQuery(COMPACT)
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-  const [phase] = useState(readPhase)
+  const [phase, setPhase] = useState<Phase>(readPhase)
   const [weather, setWeather] = useState<Weather>('sun')
   const [{ place, open, tome }, setWhere] = useState(() => {
     const address = readAddress()
@@ -79,9 +79,11 @@ export default function App() {
   const sheets = compact || !painted
   const arrived = (painted ? reached : place) === place
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = phase
-  }, [phase])
+  /** The visitor's choice of hour: the world eases into it, the page follows, and it is remembered. */
+  const choosePhase = useCallback((next: Phase) => {
+    setPhase(next)
+    keepPhase(next)
+  }, [])
 
   /** Go to a car. With `andOpen`, its words come out once the camera has arrived. */
   const visit = useCallback(
@@ -249,7 +251,7 @@ export default function App() {
       </div>
 
       <main className="overlay">
-        <Header atHome={place === 'halt'} weather={weather} onHome={() => visit('halt')} onWeather={setWeather} />
+        <Header atHome={place === 'halt'} weather={weather} onHome={() => visit('halt')} onWeather={setWeather} phase={phase} onPhase={choosePhase} />
         <Landing shown={place === 'halt'} ready={ready || !painted} onBoard={() => visit('cabin')} />
         <Hint shown={place === 'cabin' && arrived && painted}>{compact ? 'Pick a stop below, and take a window seat.' : 'Look around. Then pick a bench, or a stop on the route map.'}</Hint>
 
