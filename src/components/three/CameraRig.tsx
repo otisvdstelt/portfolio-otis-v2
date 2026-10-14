@@ -58,6 +58,29 @@ const b = new Vector3()
 const stand = (shot: Shot, out: Vector3) => out.set(shot.position[0] + (shot.onTrain ? train.x : 0), shot.position[1], shot.position[2])
 const aim = (shot: Shot, out: Vector3) => out.set(shot.target[0] + (shot.onTrain ? train.x : 0), shot.target[1], shot.target[2])
 
+/**
+ * A walk to a window seat, in seconds and metres: the time to step out into
+ * the aisle, the walking pace, the time to slide across and sit, and how
+ * many radians the head rises and falls per metre (one step to each 0.7 m).
+ */
+const WALK = { out: 0.7, pace: 1.25, sit: 1.2, step: (Math.PI * 2) / 0.7 }
+
+/** When the walking stops and the sitting starts, and how long the whole walk takes, for an aisle this long. */
+function walkTimes(distance: number) {
+  const walking = Math.max(0.5, distance / WALK.pace)
+  const seated = WALK.out / 2 + walking - 0.35
+  return { walking, seated, total: seated + WALK.sit }
+}
+
+/** Progress along the aisle at an even pace: picking up speed over the first part, slowing over the last, steady between. */
+function stride(t: number, ease = 0.2) {
+  const k = MathUtils.clamp(t, 0, 1)
+  const top = 1 / (1 - ease)
+  if (k < ease) return (top * k * k) / (2 * ease)
+  if (k > 1 - ease) return 1 - (top * (1 - k) * (1 - k)) / (2 * ease)
+  return top * (k - ease / 2)
+}
+
 /** How long the fog takes to roll over the picture, and to roll off it again, in seconds. */
 const FOG = { over: 1.15, off: 1.5 }
 
@@ -118,7 +141,9 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift,
       sendTrain(place, false)
       r.shown = place
     } else if (leaving === 'cabin' && isDestination(place) && !cuts) {
-      r.move = { kind: 'walk', ...here, from: here.from.setX(here.from.x - train.x), fromTarget: here.fromTarget.setX(here.fromTarget.x - train.x), seat: seatShot(place), duration: 3.4 }
+      const seat = seatShot(place)
+      const from = here.from.setX(here.from.x - train.x)
+      r.move = { kind: 'walk', ...here, from, fromTarget: here.fromTarget.setX(here.fromTarget.x - train.x), seat, duration: walkTimes(Math.abs(seat.position[0] - from.x)).total }
     } else {
       r.move = null
       air.wipe.value = 1
@@ -213,25 +238,28 @@ export function CameraRig({ place, reading, roaming, cuts, reducedMotion, shift,
       if (p >= 1) r.move = null
     } else if (m?.kind === 'walk') {
       m.elapsed += dt
-      const p = Math.min(1, m.elapsed / m.duration)
-      const e = easeInOut(p)
-      // Step out into the aisle, walk along it, then slide across and sit.
+      const t = m.elapsed
+      const p = Math.min(1, t / m.duration)
+      // Step out into the aisle, walk along it at an even pace, then slide across and sit. Timed in seconds, so a far seat is a longer walk, not a faster one.
       const startX = m.from.x
       const seatX = m.seat.position[0]
-      const along = smooth(0.08, 0.82, e)
-      const sitting = smooth(0.7, 1, e)
+      const { walking, seated } = walkTimes(Math.abs(seatX - startX))
+      const out = smooth(0, WALK.out, t)
+      const along = stride((t - WALK.out / 2) / walking)
+      const sitting = smooth(seated, m.duration, t)
       const x = MathUtils.lerp(startX, seatX, along)
-      const z = MathUtils.lerp(MathUtils.lerp(m.from.z, 0.04, smooth(0, 0.3, e)), m.seat.position[2], sitting)
-      const standing = DECK + 1.34 + (reducedMotion ? 0 : Math.sin(along * Math.abs(seatX - startX) * 3.2) * 0.022 * (1 - sitting))
-      const y = MathUtils.lerp(MathUtils.lerp(m.from.y, standing, smooth(0, 0.25, e)), m.seat.position[1], sitting)
+      const z = MathUtils.lerp(MathUtils.lerp(m.from.z, 0.04, out), m.seat.position[2], sitting)
+      // One gentle rise and fall to each step.
+      const standing = DECK + 1.34 + (reducedMotion ? 0 : Math.sin(along * Math.abs(seatX - startX) * WALK.step) * 0.016 * (1 - sitting))
+      const y = MathUtils.lerp(MathUtils.lerp(m.from.y, standing, out), m.seat.position[1], sitting)
       r.base.set(train.x + x, y, z)
       // Eyes along the aisle while walking; round to the window as the seat is taken.
       const heading = Math.sign(seatX - startX) || 1
       a.set(train.x + x + heading * 2.4, DECK + 1.2, -0.25)
       b.set(train.x + m.fromTarget.x, m.fromTarget.y, m.fromTarget.z)
-      a.lerpVectors(b, a, smooth(0, 0.3, e))
-      orbit.target.lerpVectors(a, aim(m.seat, b), smooth(0.58, 1, e))
-      r.fov = MathUtils.lerp(m.fromFov, m.seat.fov, e)
+      a.lerpVectors(b, a, out)
+      orbit.target.lerpVectors(a, aim(m.seat, b), smooth(seated - 0.4, m.duration, t))
+      r.fov = MathUtils.lerp(m.fromFov, m.seat.fov, easeInOut(p))
       if (p >= 1) {
         // Seated, facing the window: this is the moment the fog comes.
         r.move = null
