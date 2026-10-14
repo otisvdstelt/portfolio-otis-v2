@@ -117,7 +117,7 @@ export function Postcard() {
         <div className="postcard-foot">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <button type="submit" className="inked" data-tone="rust">
-              Drop it in the slot
+              Post it
             </button>
             <button type="button" className="quiet" onClick={copy}>
               {copied ? 'address copied' : 'copy the address instead'}

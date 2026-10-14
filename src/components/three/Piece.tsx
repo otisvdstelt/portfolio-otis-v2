@@ -61,7 +61,9 @@ export function Tag({ position, shown, children }: { position: readonly [number,
     // Behind the camera a point still projects on to the screen, mirrored: keep the tag off it.
     paper.style.visibility = pin.z > 1 ? 'hidden' : ''
     paper.style.transform = `translate3d(${((pin.x + 1) / 2) * size.width}px, ${((1 - pin.y) / 2) * size.height}px, 0) translate(-50%, -50%)`
-  })
+    // After the camera has moved and the frame has been painted (the paper pass paints at 1), so the tag sits on what was drawn,
+    // not on where the train was a frame ago: at a low frame rate that is a long way.
+  }, 2)
 
   return <object3D ref={anchor} position={position as [number, number, number]} />
 }

@@ -76,18 +76,18 @@ interface TicketProps {
   onHot: (hot: Hot | null) => void
 }
 
-/** One stop on the way here: a punched ticket tucked into the window frame. Pointed at, it says where it was for. */
+/** One year on the way here: a card tucked into the window frame. Pointed at, it says what the year was. */
 function Ticket({ index, year, text, isHot, live, onHot }: TicketProps) {
   const ticket = useRef<Group>(null)
-  const { from, step, y } = COMPARTMENT.tickets
-  const x = from + index * step
+  const { at, y, size } = COMPARTMENT.cards
+  const x = at[index] ?? at[at.length - 1] + (index - at.length + 1) * 0.24
   useFrame((_, delta) => {
     if (ticket.current) ticket.current.position.y = MathUtils.damp(ticket.current.position.y, FLOOR + y + (isHot ? 0.03 : 0), 10, delta)
   })
   const point = live ? pressable(() => onHot({ kind: 'ticket', index }), (over) => onHot(over ? { kind: 'ticket', index } : null)) : {}
   return (
     <>
-      <group ref={ticket} position={[x, FLOOR + y, NORTH + 0.016]} rotation={[-0.12, 0, (index % 2 ? 1 : -1) * 0.05]}>
+      <group ref={ticket} position={[x, FLOOR + y, NORTH + 0.016]} rotation={[-0.12, 0, (index % 2 ? 1 : -1) * 0.05]} scale={size}>
         <Piece name="Ticket" hung material={dry} line={0.003} {...point} />
         <Suspense fallback={null}>
           <Text font={FACES.hand} fontSize={0.036} color={PAGE_INK.ink} anchorX="center" anchorY="middle" position={[0.018, 0.045, 0.004]}>
@@ -95,7 +95,7 @@ function Ticket({ index, year, text, isHot, live, onHot }: TicketProps) {
           </Text>
         </Suspense>
       </group>
-      <Tag position={[x, FLOOR + y + 0.24, NORTH + 0.05]} shown={isHot}>
+      <Tag position={[x, FLOOR + y + 0.27, NORTH + 0.05]} shown={isHot}>
         {year}
         <span className="tag-note">{text}</span>
       </Tag>
@@ -119,7 +119,7 @@ export interface CompartmentProps {
 /**
  * About: somebody's own corner of the middle car. Two seats face each other
  * across a table under the window post; on the table a journal lies open,
- * and what is written in it is who Otis is. The tickets along the window are
+ * and what is written in it is who Otis is. The cards along the windows are
  * the stops so far.
  */
 export function Compartment({ here, open, reading, hot, onHot, onVisit, onClose }: CompartmentProps) {
@@ -226,7 +226,6 @@ export function MailCar({ here, open, hot, onHot, onVisit }: MailCarProps) {
   const lamp = useRef<PointLight>(null)
   const pointed = useRef(false)
   const [cx, cy, cz] = MAIL.card
-  const [slotX, slotY] = MAIL.slot
 
   useFrame((_, delta) => {
     if (card.current) card.current.position.y = MathUtils.damp(card.current.position.y, FLOOR + cy + (pointed.current && !open ? 0.035 : 0), 10, delta)
@@ -250,11 +249,6 @@ export function MailCar({ here, open, hot, onHot, onVisit }: MailCarProps) {
       {LINKS.slice(0, MAIL.named.length).map(({ label, href }, index) => (
         <Pigeonhole key={label} index={index} label={label} href={href} isHot={hot?.kind === 'hole' && hot.index === index} live={here && !open} onHot={onHot} />
       ))}
-      <Suspense fallback={null}>
-        <Text font={FACES.display} fontSize={0.04} letterSpacing={0.16} color="#f2e7ce" anchorX="center" anchorY="middle" position={[slotX, FLOOR + slotY + 0.035, NORTH + 0.034]}>
-          POST
-        </Text>
-      </Suspense>
       <pointLight ref={lamp} position={[MAIL.lamp[0], FLOOR + MAIL.lamp[1], MAIL.lamp[2]]} color="#ffcc78" intensity={0.7} distance={4} decay={1.6} />
     </>
   )

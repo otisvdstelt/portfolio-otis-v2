@@ -196,8 +196,7 @@ function parcel(x: number, y: number, z: number, w: number, h: number, d: number
 
 /**
  * The travelling post office: a sorting frame of pigeonholes over a desk
- * where the north benches were, parcels round it, and a brass slot
- * for whatever is ready to go.
+ * where the north benches were, and parcels round it.
  */
 export function buildMail(): Part[] {
   const F = CAR.floor
@@ -218,10 +217,8 @@ export function buildMail(): Part[] {
       frame.push(box(drawer - 0.05, 0.3, 0.02, [PAINT.walnut, PAINT.walnutLight], { at: [x, y, -0.77] }), box(0.12, 0.018, 0.02, PAINT.brass, { at: [x, y + 0.14, -0.755] }))
     }
   }
-  // The board behind the desk, with the slot in it.
+  // The board behind the desk.
   frame.push(slab(west, east, F + desk, F + shelf, NORTH, NORTH + 0.03, [PAINT.pine, PAINT.moss]))
-  const [slotX, slotY] = MAIL.slot
-  frame.push(box(0.4, 0.09, 0.012, PAINT.brass, { at: [slotX, F + slotY - 0.045, NORTH + 0.036] }), box(0.3, 0.022, 0.006, PAINT.soot, { at: [slotX, F + slotY - 0.011, NORTH + 0.044] }))
 
   // The pigeonholes.
   const cell = (east - west) / columns
@@ -247,12 +244,10 @@ export function buildMail(): Part[] {
   // Four of them have a brass plate: the app writes a name on each.
   for (const [column, row] of MAIL.named) frame.push(box(cell - 0.07, 0.05, 0.008, PAINT.brass, { at: [west + (column + 0.5) * cell, F + shelf + row * rise - 0.025, NORTH + depth + 0.012] }))
 
-  // On the desk: an oil lamp, scales, a stamp and its pad, letters tied in a bundle, a pen.
+  // On the desk: an oil lamp, a stamp and its pad, letters tied in a bundle, a pen.
   const top = F + desk
-  fittings.push(cyl(0.06, 0.075, 0.05, PAINT.brass, { at: [-1.05, top, -1.05] }, 10), cyl(0.03, 0.045, 0.05, PAINT.brass, { at: [-1.05, top + 0.05, -1.05] }, 8), cyl(0.028, 0.05, 0.16, [PAINT.mist, PAINT.white], { at: [-1.05, top + 0.1, -1.05] }, 8))
-  glow.push(blob(0.03, PAINT.lamp, { at: [-1.05, top + 0.15, -1.05], scale: [1, 1.6, 1] }, 0.02, 1, 1))
-  fittings.push(cyl(0.09, 0.11, 0.03, PAINT.brass, { at: [0.95, top, -1.08] }, 10), cyl(0.012, 0.012, 0.24, PAINT.brass, { at: [0.95, top + 0.03, -1.08] }, 6), box(0.36, 0.014, 0.014, PAINT.brass, { at: [0.95, top + 0.26, -1.08] }))
-  for (const side of [-1, 1]) fittings.push(cyl(0.07, 0.05, 0.014, PAINT.brass, { at: [0.95 + side * 0.17, top + 0.13 + side * 0.02, -1.08] }, 10), cyl(0.003, 0.003, 0.13 - side * 0.02, PAINT.iron, { at: [0.95 + side * 0.17, top + 0.14 + side * 0.02, -1.08] }, 4))
+  fittings.push(cyl(0.06, 0.075, 0.05, PAINT.brass, { at: [-1.05, top, -0.84] }, 10), cyl(0.03, 0.045, 0.05, PAINT.brass, { at: [-1.05, top + 0.05, -0.84] }, 8), cyl(0.028, 0.05, 0.16, [PAINT.mist, PAINT.white], { at: [-1.05, top + 0.1, -0.84] }, 8))
+  glow.push(blob(0.03, PAINT.lamp, { at: [-1.05, top + 0.15, -0.84], scale: [1, 1.6, 1] }, 0.02, 1, 1))
   fittings.push(box(0.14, 0.022, 0.09, PAINT.soot, { at: [0.45, top, -0.86] }), box(0.12, 0.006, 0.07, PAINT.rug, { at: [0.45, top + 0.022, -0.86] }))
   fittings.push(cyl(0.022, 0.03, 0.035, PAINT.brass, { at: [0.62, top, -0.92] }, 8), cyl(0.014, 0.014, 0.06, walnut, { at: [0.62, top + 0.035, -0.92] }, 6), blob(0.022, PAINT.walnut, { at: [0.62, top + 0.1, -0.92] }, 0.02, 1, 1))
   let stack = top

@@ -68,8 +68,8 @@ export const COMPARTMENT = {
   journal: [0, 0.75, -0.985] as Triple,
   scale: 0.66,
   mug: [0.47, 0.75, -1.08] as Triple,
-  /** The tickets tucked along the bottom of the east window: the first, the step to the next, their height. */
-  tickets: { from: 0.36, step: 0.19, y: 0.865 },
+  /** The year cards tucked along the bottom of the two windows, between the curtains: where each stands along the car, oldest first, and how high, and how much bigger than a ticket they are. */
+  cards: { at: [-0.9, -0.66, -0.42, 0.48, 0.78], y: 0.865, size: 1.2 },
   lamp: [0, 1.5, -0.85] as Triple,
 }
 
@@ -93,11 +93,9 @@ export const MAIL = {
     [3, 1],
     [4, 1],
   ] as const,
-  /** The brass slot in the board behind the desk: where along it, and how high. */
-  slot: [0.5, 1.0] as const,
   /** The card on the desk. */
   card: [0, 0.824, -0.93] as Triple,
-  lamp: [-1.05, 1.0, -1.0] as Triple,
+  lamp: [-1.05, 1.0, -0.8] as Triple,
 }
 
 /** The driver's cab, at the front of the front car. Measured from the middle of that car, heights from its floor. */
