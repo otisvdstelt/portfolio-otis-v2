@@ -54,7 +54,7 @@ The generated model and the Draco decoder are committed, so the asset scripts do
 There are no hand-modelled files. Everything that stands in the world is described in TypeScript in `src/lib/world/` as stacked, painted primitives, and `npm run world` bakes it into one Draco-compressed file:
 
 ```
-public/assets/world.glb   34 named meshes, about 24,000 triangles, 1.4 MB -> 123 KB
+src/assets/world.glb      34 named meshes, about 23,000 triangles, 1.3 MB -> 118 KB
 ```
 
 - `kit.ts`: the modelling kit (blocks, posts, lumpy balls, extrusions, rings), each piece coloured per vertex.
@@ -89,11 +89,11 @@ If WebGL is not available at all, every word on the site is still reachable from
 ```
 scripts/                 build-world.ts (bakes world.glb), copy-draco.mjs
 public/
-  assets/world.glb       the baked world
   assets/projects/       a still of each project, for the screen
   data/projects.json     which repositories are in the picture car's rack
   draco/                 the Draco decoder
 src/
+  assets/world.glb       the baked world (imported, so the build names it after its contents)
   App.tsx                where the visitor is, what is open, the address, the theme
   content/site.ts        everything the site says about its owner
   hooks/                 the capability check; the project and GitHub queries

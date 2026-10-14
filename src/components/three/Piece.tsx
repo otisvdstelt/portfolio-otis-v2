@@ -29,6 +29,10 @@ interface PieceProps {
 /** One named mesh from the baked world, cel-shaded, with its hand-drawn outline. */
 export function Piece({ name, material = paint, hung = false, line = OUTLINE.thickness, position, rotation, castShadow = true, ...events }: PieceProps) {
   const parts = useParts()
+  if (!parts.geometry[name]) {
+    console.warn(`The world has no part called ${name}; it is left out. Run npm run world to bake it.`)
+    return null
+  }
   return (
     <mesh geometry={parts.geometry[name]} material={material} position={(position ?? (hung ? undefined : parts.pivot[name])) as [number, number, number] | undefined} rotation={rotation as [number, number, number] | undefined} castShadow={castShadow} receiveShadow {...events}>
       {line > 0 && <Outlines thickness={line} color={OUTLINE.color} screenspace={false} opacity={OUTLINE.opacity} transparent />}

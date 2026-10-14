@@ -1,4 +1,4 @@
-// Bakes the world (src/lib/world) into public/assets/world.glb as named,
+// Bakes the world (src/lib/world) into src/assets/world.glb as named,
 // Draco-compressed meshes with their colours painted into the vertices.
 //
 // Run with `npm run world`. Node runs this TypeScript file directly (type
@@ -59,7 +59,8 @@ const uncompressed = (await io.writeBinary(doc)).byteLength
 await doc.transform(draco({ method: 'edgebreaker', quantizePosition: 14, quantizeNormal: 9, quantizeColor: 8 }))
 const glb = await io.writeBinary(doc)
 
-const out = resolve(root, 'public/assets/world.glb')
+// Imported by the app (src/components/three/assets.ts), so every build names it after its contents and no browser can keep an old one.
+const out = resolve(root, 'src/assets/world.glb')
 await mkdir(dirname(out), { recursive: true })
 await writeFile(out, glb)
 console.log(`world.glb  ${parts.length} meshes, ${Math.round(triangles)} triangles, ${(uncompressed / 1024).toFixed(0)} KB -> ${(glb.byteLength / 1024).toFixed(0)} KB with Draco`)

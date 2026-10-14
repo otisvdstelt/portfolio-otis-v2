@@ -2,10 +2,13 @@ import { useGLTF } from '@react-three/drei'
 import { createContext, use, useMemo } from 'react'
 import type { BufferGeometry, Mesh } from 'three'
 
+import worldUrl from '../../assets/world.glb?url'
+
 const base = import.meta.env.BASE_URL
 
 /** The whole world in one Draco-compressed file, baked by `npm run world`. */
-export const WORLD_URL = `${base}assets/world.glb`
+// The build names the file after its contents, so a new model always arrives under a new address and an old one is never served from a cache.
+export const WORLD_URL = worldUrl
 /** The decoder is served from this site (see scripts/copy-draco.mjs), not from a CDN. */
 const DRACO_PATH = `${base}draco/`
 
