@@ -6,8 +6,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    // three.js + R3F + drei + postprocessing land in one lazily loaded chunk;
-    // the title and the sprout paint from the small main chunk before it arrives.
+    // three.js and all that comes with it lands in one lazy chunk, so the title paints first
     chunkSizeWarningLimit: 1300,
   },
 })

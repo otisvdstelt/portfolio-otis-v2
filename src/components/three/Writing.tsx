@@ -8,9 +8,9 @@ import { pressable } from './press'
 const QUARTER = Math.PI / 2
 
 interface InkProps {
-  /** 0 nothing on the page yet, 1 fully written. */
+  /** 0 nothing on the page yet, 1 fully written */
   ink: RefObject<number>
-  /** Across and down the page, from the book's own middle. */
+  /** Across and down the page, from the middle of the book */
   at: readonly [x: number, z: number]
   size: number
   face?: Face
@@ -19,7 +19,7 @@ interface InkProps {
   leading?: number
   anchor?: 'left' | 'right'
   from?: 'top' | 'bottom'
-  /** Called when the words have been set, with the block they came to. */
+  /** Called when the words have been set, with the block they came to */
   onSet?: (height: number) => void
   onClick?: (event: ThreeEvent<MouseEvent>) => void
   onPointerOver?: (event: ThreeEvent<PointerEvent>) => void
@@ -27,10 +27,7 @@ interface InkProps {
   children: ReactNode
 }
 
-/**
- * A line or a paragraph written on a page of an open book, as live text in
- * the page's own faces. It comes up out of the paper as `ink` goes to 1.
- */
+/** A line written on a page, coming up out of the paper as ink goes to 1 */
 export function Ink({ ink, at, size, face = 'body', colour = PAGE_INK.ink, width, leading = 1.3, anchor = 'left', from = 'top', onSet, children, ...events }: InkProps) {
   const text = useRef<{ fillOpacity: number; visible: boolean } | null>(null)
   useFrame(() => {
@@ -76,7 +73,7 @@ interface WashProps {
   lift?: number
 }
 
-/** A flat patch of colour on the page: the sheet of paper itself, a ruled line, a brush stroke. */
+/** A flat patch of colour, the sheet itself, a ruled line or a brush stroke */
 export function Wash({ ink, at, size, colour, strength = 1, lift = PAGE.writing }: WashProps) {
   const paint = useRef<MeshBasicMaterial>(null)
   useFrame(() => {
@@ -90,26 +87,22 @@ export function Wash({ ink, at, size, colour, strength = 1, lift = PAGE.writing 
   )
 }
 
-/** One thing in a column of writing: a heading, a paragraph, an entry with a word in the margin. */
+/** One thing in a column of writing, a heading, a paragraph or an entry */
 export interface Line {
   text: string
   size: number
   face?: Face
   colour?: string
   leading?: number
-  /** Space left above it. */
+  /** Space left above it */
   gap?: number
-  /** A word set in the margin beside it, such as a year; the text is set in from it. */
+  /** A word set in the margin beside it, such as a year */
   label?: string
   inset?: number
   onPress?: () => void
 }
 
-/**
- * A column of writing, set from the top of a page downward. Each piece is
- * measured once it has been set, and the next is placed under it, so a
- * paragraph can run to as many lines as it needs.
- */
+/** A column of writing, each piece measured once set and the next placed under it */
 export function Column({ ink, at, width, lines }: { ink: RefObject<number>; at: readonly [x: number, z: number]; width: number; lines: readonly Line[] }) {
   const [heights, setHeights] = useState<readonly number[]>([])
   const measure = (index: number, height: number) => setHeights((before) => (Math.abs((before[index] ?? -1) - height) < 1e-5 ? before : Object.assign([...before], { [index]: height })))

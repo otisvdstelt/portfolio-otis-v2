@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-/** Live result of a CSS media query. */
+/** Live result of a CSS media query */
 export function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
     (onChange) => {
@@ -12,19 +12,13 @@ export function useMediaQuery(query: string): boolean {
   )
 }
 
-/** Below this width the page is laid out for a phone or a small tablet: a menu along the bottom and sheets that slide up. */
+/** Below this width the page is laid out for a phone, with a menu along the bottom */
 export const COMPACT = '(max-width: 1023px)'
 
 export type Mode = 'roam' | 'backdrop'
 
-/**
- * The capability check. A wide window with a pointer and some headroom gets
- * the free camera and everything that moves (`roam`). A touch screen, a
- * window under 1024 px, or modest hardware gets fixed compositions that act
- * as animated backdrops: nothing in the scene is repositioned at run time,
- * and the lights and shadows that cost the most are left out. `?mode=roam`
- * or `?mode=backdrop` in the address overrides the guess.
- */
+/** A wide window with a pointer gets the free camera, anything else fixed views */
+// A mode of roam or backdrop in the address overrides the guess
 export function useMode(): Mode {
   const coarse = useMediaQuery('(pointer: coarse)')
   const compact = useMediaQuery(COMPACT)

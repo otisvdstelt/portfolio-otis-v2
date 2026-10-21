@@ -15,13 +15,12 @@ import { seatsQuery, useLeaves } from './hooks/useProjects'
 import { keepPhase, readPhase, type Phase, type Weather } from './lib/air'
 import { isDestination, isPlaceId, PLACES, type Hot, type PlaceId } from './lib/places'
 
-// three.js, R3F, drei and the post-processing land in their own chunk; the
-// title and the sprout paint from this small one before it arrives.
+// three.js and all that comes with it lands in its own chunk, so the title paints first
 const World = lazy(() => import('./components/World'))
 
 const REELS = 4
 
-/** The address names the car, and in the picture car the reel: `#/cab`, `#/cinema/reel-2`. */
+/** The address names the car, and in the picture car the reel it is showing */
 function readAddress(): { place: PlaceId; tome: number | null } {
   const [, first = '', second = ''] = window.location.hash.split('/')
   const place = isPlaceId(first) ? first : 'halt'
@@ -55,37 +54,37 @@ export default function App() {
     const address = readAddress()
     return { ...address, open: isDestination(address.place) && window.matchMedia(COMPACT).matches }
   })
-  /** The place the camera has actually reached: it trails `place` by the length of the journey. */
+  /** The place the camera has actually reached, one journey behind place */
   const [reached, setReached] = useState(place)
   const [hot, setHot] = useState<Hot | null>(null)
-  /** The lever of the cab that has been left pulled. */
+  /** Which cab lever has been left pulled */
   const [pulled, setPulled] = useState<number | null>(null)
   const [ready, setReady] = useState(false)
   const [painted, setPainted] = useState(true)
   const arrival = useRef<number | undefined>(undefined)
-  /** Bring the place's words out once the camera is there. */
+  /** Bring the words out once the camera is there */
   const wanted = useRef(false)
-  // The latest whereabouts, for handlers that must not be rebuilt on every step.
+  // The latest whereabouts, for handlers that must not be rebuilt each step
   const where = useRef({ place, open, tome })
   useEffect(() => {
     where.current = { place, open, tome }
   }, [place, open, tome])
   const seats = useQuery(seatsQuery).data
   const volumes = useMemo(() => seats?.map(({ title, kind }) => ({ title, kind })) ?? [], [seats])
-  // What there is to say about whichever project is in the lantern, with GitHub's figures for it.
+  // What there is to say about the project in the lantern, with its GitHub figures
   const { leaves, ask } = useLeaves(tome === null ? undefined : seats?.[tome], tome)
 
-  // On a phone, and wherever the world cannot be drawn, every car's words come up on a sheet as soon as the visitor is there.
+  // On a phone, or with no picture, each car shows its words on a sheet
   const sheets = compact || !painted
   const arrived = (painted ? reached : place) === place
 
-  /** The visitor's choice of hour: the world eases into it, the page follows, and it is remembered. */
+  /** The chosen hour, which the world eases into and the browser remembers */
   const choosePhase = useCallback((next: Phase) => {
     setPhase(next)
     keepPhase(next)
   }, [])
 
-  /** Go to a car. With `andOpen`, its words come out once the camera has arrived. */
+  /** Go to a car. With andOpen, its words come out once the camera arrives */
   const visit = useCallback(
     (to: PlaceId, andOpen = false) => {
       window.clearTimeout(arrival.current)
@@ -105,7 +104,7 @@ export default function App() {
     [sheets, painted],
   )
 
-  /** The camera has got somewhere. If the place's words were asked for, bring them out once the fog is off it. */
+  /** The camera has arrived. Words that were asked for come out once the fog lifts */
   const arrive = useCallback((at: PlaceId) => {
     setReached(at)
     if (at !== where.current.place || !wanted.current) return
@@ -113,7 +112,7 @@ export default function App() {
     arrival.current = window.setTimeout(() => setWhere((then) => (then.place === at ? { ...then, open: true } : then)), 1100)
   }, [])
 
-  /** Put one project in the lantern. */
+  /** Put one project in the lantern */
   const showProject = useCallback((index: number) => {
     window.clearTimeout(arrival.current)
     setHot(null)
@@ -121,7 +120,7 @@ export default function App() {
     setWhere((then) => ({ place: 'cinema', open: then.place === 'cinema' && then.open, tome: index }))
   }, [])
 
-  /** Put away whatever is out: the picture on the screen, or else the journal or the card. */
+  /** Put away whatever is out, the picture or else the journal or the card */
   const close = useCallback(() => {
     if (where.current.tome === null) {
       setWhere((then) => ({ ...then, open: false }))
@@ -131,10 +130,10 @@ export default function App() {
     setWhere((then) => ({ ...then, tome: null }))
   }, [])
 
-  /** Pulling a lever leaves it pulled; pulling it again lets it go. */
+  /** Pulling a lever leaves it pulled, pulling it again lets it go */
   const pull = useCallback((index: number) => setPulled((now) => (now === index ? null : index)), [])
 
-  // Back, forward and hand-edited addresses.
+  // Back, forward and addresses typed by hand
   useEffect(() => {
     const follow = () => {
       window.clearTimeout(arrival.current)
@@ -152,7 +151,7 @@ export default function App() {
     }
   }, [sheets, painted])
 
-  // Escape puts away whatever is out. (On a phone the project's pages are a dialog, which handles Escape itself.)
+  // Escape puts away whatever is out, except the dialog, which handles it itself
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
@@ -168,13 +167,13 @@ export default function App() {
     document.title = place === 'halt' ? `${OWNER.name} · ${OWNER.title}` : `${PLACES[place].name}: ${PLACES[place].role} · ${OWNER.name}`
   }, [place])
 
-  // The lever that is working: the one under the pointer, or failing that the one left pulled.
+  // The working lever, the one under the pointer or else the one left pulled
   const lever = place !== 'cab' ? -1 : hot?.kind === 'lever' ? hot.index : (pulled ?? -1)
   const at = (id: PlaceId) => open && place === id
   // On a phone the picture slides up to stay in view above its sheet.
   const shift: readonly [number, number] = open && compact ? [0, 0.17] : [0, 0]
 
-  // What can be done here, in words, for a wide screen. (On a phone the same things are on the car's sheet.)
+  // What can be done here, in words, for a wide screen
   const prompts: { title: string; list: Prompt[] } =
     place === 'cinema'
       ? {
@@ -256,7 +255,7 @@ export default function App() {
         <Hint shown={place === 'cabin' && arrived && painted}>{compact ? 'Pick a stop below, and take a window seat.' : 'Look around. Then pick a bench, or a stop on the route map.'}</Hint>
 
         {!sheets && <Prompts shown={isDestination(place) && arrived && !open && tome === null} title={prompts.title} prompts={prompts.list} />}
-        {/* On a wide screen the screen and the journal carry their own words in the picture; these are their ribbons. */}
+        {/* The screen and the journal carry their own words, these are their ribbons */}
         {!sheets && (
           <Bookmark shown={arrived && leaves !== null} label={`${leaves?.title ?? 'The picture'}: links`} links={leaves ? [...(leaves.live ? [{ label: 'open the live site', href: leaves.live }] : []), { label: 'read the source', href: leaves.source }] : []} closeLabel="stop the projector" onClose={close}>
             {leaves && (

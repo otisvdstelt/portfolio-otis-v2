@@ -18,12 +18,12 @@ const QUARTER = Math.PI / 2
 const FLOOR = CAR.floor
 const NORTH = -CAR.halfWidth + 0.08
 const { width: W, height: H } = BOOK
-/** A press that is only a press on the thing itself, and must not count as a press on nothing. */
+/** A press on the thing itself, which must not count as a press on nothing */
 const swallow = { onClick: (event: ThreeEvent<MouseEvent>) => event.stopPropagation() }
 
-// ------------------------------------------------------------ the compartment (about)
+// ============================================================ the compartment (about)
 
-// The journal is the modeller's book made smaller, so its pages are measured in the book's own units.
+// The journal is the modelled book made smaller, measured in its own units
 const COLUMN = 0.32
 const LEAF = [W - 0.022, H - 0.036] as const
 const LEFT = -1.5 * W + 0.058
@@ -52,7 +52,7 @@ const RIGHT_PAGE: readonly Line[] = [
   ...ABOUT.philosophy.map((paragraph) => body(paragraph, 0.01)),
 ]
 
-/** The journal's two pages: who Otis is on the left, the timeline and the way Otis works on the right. */
+/** Two pages, who Otis is on the left and the timeline on the right */
 function JournalPages({ ink, onClose }: { ink: RefObject<number>; onClose: () => void }) {
   return (
     <>
@@ -76,7 +76,7 @@ interface TicketProps {
   onHot: (hot: Hot | null) => void
 }
 
-/** One year on the way here: a card tucked into the window frame. Pointed at, it says what the year was. */
+/** One year on the way here, a card tucked into the window frame */
 function Ticket({ index, year, text, isHot, live, onHot }: TicketProps) {
   const ticket = useRef<Group>(null)
   const { at, y, size } = COMPARTMENT.cards
@@ -104,11 +104,11 @@ function Ticket({ index, year, text, isHot, live, onHot }: TicketProps) {
 }
 
 export interface CompartmentProps {
-  /** The visitor has arrived in the car. */
+  /** The visitor has arrived in the car */
   here: boolean
-  /** The journal's words are out. */
+  /** The words of the journal are out */
   open: boolean
-  /** It is being read in the picture, from straight above. */
+  /** It is being read in the picture, from straight above */
   reading: boolean
   hot: Hot | null
   onHot: (hot: Hot | null) => void
@@ -116,12 +116,7 @@ export interface CompartmentProps {
   onClose: () => void
 }
 
-/**
- * About: somebody's own corner of the middle car. Two seats face each other
- * across a table under the window post; on the table a journal lies open,
- * and what is written in it is who Otis is. The cards along the windows are
- * the stops so far.
- */
+/** A corner of the middle car, two seats and a table with the journal open on it */
 export function Compartment({ here, open, reading, hot, onHot, onVisit, onClose }: CompartmentProps) {
   const parts = useParts()
   const ink = useRef(0)
@@ -132,7 +127,7 @@ export function Compartment({ here, open, reading, hot, onHot, onVisit, onClose 
   const [mx, my, mz] = COMPARTMENT.mug
 
   useFrame((_, delta) => {
-    // The writing waits for the camera to come down over the page.
+    // The writing waits for the camera to come down over the page
     ink.current = MathUtils.damp(ink.current, reading ? 1 : 0, reading ? 1.7 : 9, delta)
     if (ink.current < 0.02 && !reading) ink.current = 0
     if (lamp.current) lamp.current.intensity = (0.08 + air.night.value * 2.6) * (0.97 + Math.sin(air.time.value * 6.1) * 0.02)
@@ -145,7 +140,7 @@ export function Compartment({ here, open, reading, hot, onHot, onVisit, onClose 
       <Piece name="Compartment_Fittings" material={dry} line={0.008} />
       <Piece name="Compartment_Glow" material={glow} line={0} castShadow={false} />
 
-      {/* The journal: the modeller's book made smaller, lying open with its hinge in the middle of the table. */}
+      {/* The book lying open, with its hinge in the middle of the table */}
       <group position={[jx + (W / 2) * s, FLOOR + jy + 0.002, jz]} scale={s}>
         <Piece name="Book_Back" material={leather} line={0.006} {...take} />
         <Piece name="Book_LeavesRight" material={dry} line={0.003} {...take} />
@@ -172,7 +167,7 @@ export function Compartment({ here, open, reading, hot, onHot, onVisit, onClose 
   )
 }
 
-// ------------------------------------------------------------ the mail car (contact)
+// ============================================================ the mail car (contact)
 
 const CELL = (MAIL.east - MAIL.west) / MAIL.columns
 const RISE = (MAIL.top - MAIL.shelf) / MAIL.rows
@@ -186,7 +181,7 @@ interface PigeonholeProps {
   onHot: (hot: Hot | null) => void
 }
 
-/** A pigeonhole with a name on its brass plate. The whole hole is the link, not only the lettering. */
+/** A pigeonhole with a name on its plate. The whole hole is the link */
 function Pigeonhole({ index, label, href, isHot, live, onHot }: PigeonholeProps) {
   const [column, row] = MAIL.named[index]
   const x = MAIL.west + (column + 0.5) * CELL
@@ -209,18 +204,14 @@ function Pigeonhole({ index, label, href, isHot, live, onHot }: PigeonholeProps)
 
 export interface MailCarProps {
   here: boolean
-  /** The card is being written. */
+  /** The card is being written */
   open: boolean
   hot: Hot | null
   onHot: (hot: Hot | null) => void
   onVisit: (place: PlaceId, open?: boolean) => void
 }
 
-/**
- * Contact: the travelling post office. A sorting frame of pigeonholes stands
- * over a desk; four of the holes have a name on them and are the ways to
- * find Otis elsewhere, and the card on the desk is the way to write.
- */
+/** A travelling post office, a frame of pigeonholes over a desk with a card on it */
 export function MailCar({ here, open, hot, onHot, onVisit }: MailCarProps) {
   const card = useRef<Group>(null)
   const lamp = useRef<PointLight>(null)
@@ -254,23 +245,23 @@ export function MailCar({ here, open, hot, onHot, onVisit }: MailCarProps) {
   )
 }
 
-// ------------------------------------------------------------ the driver's cab (skills)
+// ============================================================ the cab (skills)
 
-/** A cab's paint. Under its own roof it stays dry in the rain. */
+/** Cab paint, which stays dry under its own roof */
 const cabPaint = paintedToon({ shelter: CAR.ceiling + 0.2 })
 
 interface ControlProps {
   index: number
   z: number
   name: string
-  /** Its lever is pulled. */
+  /** Its lever is pulled */
   pulled: boolean
   live: boolean
   onHot: (hot: Hot | null) => void
   onLever: (index: number) => void
 }
 
-/** One division of the craft: a dial, the lever that works it, and its name on a brass plate. */
+/** One division of the craft, a dial, its lever and its name on a plate */
 function Control({ index, z, name, pulled, live, onHot, onLever }: ControlProps) {
   const lever = useRef<Group>(null)
   const needle = useRef<Group>(null)
@@ -278,14 +269,14 @@ function Control({ index, z, name, pulled, live, onHot, onLever }: ControlProps)
   useFrame((_, delta) => {
     pull.current = MathUtils.damp(pull.current, pulled ? 1 : 0, 5, delta)
     const p = pull.current
-    // At rest a lever leans back toward the driver; pulled, it goes forward and its needle swings across the dial.
+    // At rest a lever leans back, pulled it goes forward and the needle swings
     if (lever.current) lever.current.rotation.z = MathUtils.lerp(0.42, -0.5, p)
     if (needle.current) needle.current.rotation.x = MathUtils.lerp(-1.75, 1.15, p * p * (3 - 2 * p)) + Math.sin(air.time.value * (5 + index)) * 0.025 * (0.3 + p)
   })
   const work = live ? pressable(() => onLever(index), (over) => onHot(over ? { kind: 'lever', index } : null)) : {}
   return (
     <>
-      {/* The dial and the lever are small things to point at; this is the space round them. */}
+      {/* The dial and lever are small to point at, so this is the space round them */}
       <mesh position={[(CAB.plate[0] + CAB.dials[0]) / 2, FLOOR + 1.04, z]} {...work}>
         <boxGeometry args={[CAB.dials[0] - CAB.plate[0], 0.42, 0.44]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -306,19 +297,14 @@ function Control({ index, z, name, pulled, live, onHot, onLever }: ControlProps)
 }
 
 export interface CabProps {
-  /** The lever being pointed at or left pulled, or -1. */
+  /** The lever being pointed at or left pulled, or none */
   chosen: number
   here: boolean
   onHot: (hot: Hot | null) => void
   onLever: (index: number) => void
 }
 
-/**
- * Skills: the driver's cab at the head of the train, the line running away
- * ahead over the sea. Four levers, one for each division of the craft; pull
- * one and its needle swings, and the board over the windscreen, where a
- * train says where it is going, says what that division is made of.
- */
+/** The cab at the head of the train, four levers and a board over the windscreen */
 export function Cab({ chosen, here, onHot, onLever }: CabProps) {
   const lamp = useRef<PointLight>(null)
   const division = DIVISIONS[chosen]

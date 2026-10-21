@@ -1,7 +1,5 @@
-// Whether the world is still on its way. A Suspense fallback holds this open
-// for as long as it is mounted, and the sprout in the corner of the page keeps
-// growing for as long as it is held. It lives outside the 3D chunk so the
-// sprout can be drawn before three.js has even been downloaded.
+// Whether the world is still on its way, held open by a Suspense fallback
+// It lives outside the 3D chunk, so the sprout is drawn before three.js arrives
 
 let holds = 0
 let everHeld = false
@@ -11,9 +9,9 @@ const tell = () => {
 }
 
 export const progress = {
-  /** True until the first Suspense fallback has come and gone. */
+  /** True until the first Suspense fallback has come and gone */
   pending: () => holds > 0 || !everHeld,
-  /** Called by the fallback while it is mounted; returns the release. */
+  /** Called by the fallback while it is mounted, and returns the release */
   hold() {
     holds++
     everHeld = true

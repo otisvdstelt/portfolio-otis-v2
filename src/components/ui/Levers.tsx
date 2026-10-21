@@ -2,16 +2,13 @@ import { DIVISIONS, SOON } from '../../content/site'
 import type { Hot } from '../../lib/places'
 
 interface LeversProps {
-  /** The lever being pointed at or left pulled, or -1. */
+  /** The lever being pointed at or left pulled, or none */
   pulled: number
   onHot: (hot: Hot | null) => void
   onLever: (index: number) => void
 }
 
-/**
- * The cab's four levers written out, for a phone: each division of the craft
- * and what it is made of. Choosing a row pulls that lever in the picture.
- */
+/** The four cab levers written out, for a phone. A row pulls that lever in the picture */
 export function Levers({ pulled, onHot, onLever }: LeversProps) {
   return (
     <div className="paper sheet">

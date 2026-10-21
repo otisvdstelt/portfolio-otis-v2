@@ -1,25 +1,23 @@
 @import 'tailwindcss';
 
-/* Night is a theme, not a media query: it follows the visitor's clock, and it is set once when the page opens (see src/main.tsx). */
+/* Night follows the clock rather than the media query, and is set once in main.tsx */
 @custom-variant dark (&:where([data-theme='night'], [data-theme='night'] *));
 
 @theme {
-  /* Four hands. A fountain-pen script for the name and the sketchpad; a soft
-     antique for words that are printed, carved or painted on a board; a
-     pen-written textbook hand for reading; a felt-pen scrawl for labels. */
+  /* Four hands. Script for the name, antique for signs, textbook for reading, felt pen for labels */
   --font-script: 'Homemade Apple', 'Klee One', cursive;
   --font-display: 'Zen Antique Soft', 'Iowan Old Style', 'Palatino Linotype', serif;
   --font-sans: 'Klee One', 'Hiragino Maru Gothic ProN', ui-rounded, system-ui, sans-serif;
   --font-hand: 'Yomogi', 'Klee One', cursive;
 
-  /* The five colours everything else is mixed from. */
+  /* The five colours everything else is mixed from */
   --color-canvas-base: #f7f4eb; /* warm antique cream parchment */
   --color-canvas-text: #2c2823; /* deep charcoal ink */
   --color-ghibli-green: #3b533e; /* lush moss */
   --color-ghibli-sky: #a3c1ad; /* soft mist */
   --color-ghibli-earth: #b8623b; /* rustic terracotta tile */
 
-  /* What the stylesheet calls them, and the few shades mixed between them. */
+  /* The names the stylesheet uses, and the shades mixed between them */
   --color-paper: var(--color-canvas-base);
   --color-canvas: #fcfaf3;
   --color-oat: #ebe4d0;
@@ -29,10 +27,10 @@
   --color-moss: var(--color-ghibli-green);
   --color-clover: #86ae4a;
   --color-terracotta: var(--color-ghibli-earth);
-  /* Terracotta deep enough to write with, and to carry pale lettering. */
+  /* Terracotta deep enough to write with, and to carry pale lettering */
   --color-rust: #8f4526;
   --color-mist: var(--color-ghibli-sky);
-  /* The colour of links and of the focus ring. */
+  /* Links and the focus ring */
   --color-dusk: var(--color-ghibli-green);
   --color-gold: #e3b659;
 
@@ -44,9 +42,9 @@
 
 @layer base {
   :root {
-    /* The tooth of the sheet: fine brown speckle, tiled. */
+    /* The tooth of the sheet, a fine brown speckle, tiled */
     --tooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .17 0 0 0 0 .16 0 0 0 0 .14 .2 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    /* A pen stroke under whatever is chosen. */
+    /* A pen stroke under whatever is chosen */
     --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5C8 1 12 7 20 4S32 1 40 4s12 3 19-1' fill='none' stroke='%23b8623b' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
     --shadow-rest: 0 1px 1px rgb(44 40 35 / 0.18), 0 8px 18px -8px rgb(44 40 35 / 0.42);
     --trail-height: 4.25rem;
@@ -78,7 +76,7 @@
   body {
     margin: 0;
     overflow: hidden;
-    /* Bare paper: what shows before the world is painted, and round its ragged edge after. */
+    /* Bare paper, what shows before the world is painted and round its edge after */
     background: var(--color-paper) var(--tooth);
     color: var(--color-ink);
     font-family: var(--font-sans);
@@ -110,7 +108,7 @@
 }
 
 @layer components {
-  /* ------------------------------------------------------------ the stage */
+  /* ============================================================ the stage */
 
   .stage {
     position: fixed;
@@ -123,7 +121,7 @@
     inset: 0;
   }
 
-  /* Everything written over the painting lets the pointer through to it, except the things you can press. */
+  /* The overlay lets the pointer through, except where something can be pressed */
   .overlay {
     position: absolute;
     inset: 0;
@@ -140,10 +138,9 @@
     letter-spacing: 0.01em;
   }
 
-  /* ------------------------------------------------------------ paper */
+  /* ============================================================ paper */
 
-  /* A cut or torn piece of paper. The sheet itself is a pseudo-element pushed
-     through the deckle filter, so its edge is ragged and the words on it stay sharp. */
+  /* Cut paper. The sheet is a pseudo element, so the deckle filter leaves the words sharp */
   .paper {
     position: relative;
     isolation: isolate;
@@ -164,7 +161,7 @@
     filter: url(#deckle) drop-shadow(0 1px 0.5px rgb(0 0 0 / 0.5)) drop-shadow(0 10px 16px rgb(0 0 0 / 0.55));
   }
 
-  /* A slip: a small scrap for a label or a pair of words. */
+  /* A slip is a small scrap for a label or a few words */
   .slip {
     padding: 0.4rem 0.95rem 0.45rem;
     border: 0;
@@ -176,7 +173,7 @@
     filter: url(#deckle-fine) drop-shadow(0 1px 0.5px rgb(58 42 32 / 0.22)) drop-shadow(0 5px 7px rgb(58 42 32 / 0.22));
   }
 
-  /* ------------------------------------------------------------ header */
+  /* ============================================================ header */
 
   .wordmark {
     font-family: var(--font-display);
@@ -199,7 +196,7 @@
     pointer-events: none;
   }
 
-  /* The weather switch: two words, the true one underlined in pen. */
+  /* The weather switch, two words with the true one underlined in pen */
   .weather {
     display: inline-flex;
     align-items: baseline;
@@ -228,7 +225,7 @@
     color: var(--color-rule);
   }
 
-  /* ------------------------------------------------------------ landing */
+  /* ============================================================ landing */
 
   .landing {
     position: absolute;
@@ -241,7 +238,7 @@
       filter 700ms var(--ease-out-expo);
   }
 
-  /* Leaving the halt, the title lifts away like a page being turned back. */
+  /* Leaving the halt, the title lifts away like a page turned back */
   .landing[data-shown='false'] {
     opacity: 0;
     translate: 0 -1.5rem;
@@ -249,7 +246,7 @@
     pointer-events: none;
   }
 
-  /* Unpainted sky behind the title: the painter left the paper bare here. */
+  /* Unpainted sky behind the title, where the paper was left bare */
   .landing::before {
     content: '';
     position: absolute;
@@ -260,14 +257,14 @@
     opacity: 0.62;
   }
 
-  /* The name, in a fountain-pen hand. A script needs air round it: loose leading, no tightening. */
+  /* The name in a pen script, which needs loose leading and no tightening */
   .landing-name {
     margin: 0;
     font-family: var(--font-script);
     font-weight: 400;
     font-size: clamp(1.9rem, 4.7vw, 4.1rem);
     line-height: 1.5;
-    /* The face sets its words close; open them up so three short words do not run into one. */
+    /* The face sets its words close, so open them up */
     word-spacing: 0.28em;
     text-wrap: balance;
   }
@@ -281,7 +278,7 @@
     transform-origin: 0 50%;
   }
 
-  /* The way aboard: a hand-cut terracotta ticket. It sits a little crooked and straightens under the hand. */
+  /* The way aboard, a crooked terracotta ticket that straightens under the hand */
   .plaque {
     position: relative;
     isolation: isolate;
@@ -329,7 +326,7 @@
     opacity: 0.55;
   }
 
-  /* ------------------------------------------------------------ the trail (route map) */
+  /* ============================================================ the trail (route map) */
 
   .trail {
     position: absolute;
@@ -394,7 +391,7 @@
     white-space: nowrap;
   }
 
-  /* With the room for it, the menu is drawn as a route map: one pen line, and a ring on it at every stop. */
+  /* With room, the menu is drawn as a route map with a ring at every stop */
   @media (min-width: 1024px) {
     :root {
       --trail-height: 5.1rem;
@@ -434,7 +431,7 @@
       border-color: var(--color-ink);
     }
 
-    /* Where the visitor is: the ring is filled in. */
+    /* The stop the visitor is at has its ring filled in */
     .trail-stop[aria-current='true']::before {
       scale: 1.3;
       border-color: var(--color-ink);
@@ -446,7 +443,7 @@
     }
   }
 
-  /* On a phone the map is the app's menu: full width, pinned to the bottom, one plain word per stop. */
+  /* On a phone the map is a bar across the foot, one plain word per stop */
   @media (max-width: 1023px) {
     .trail {
       left: 0;
@@ -494,9 +491,9 @@
     }
   }
 
-  /* ------------------------------------------------------------ tags pinned in the world */
+  /* ============================================================ tags pinned in the world */
 
-  /* The layer the scene pins its tags to: the same box as the picture, and nothing in it takes the pointer. */
+  /* The layer the scene pins its tags to, the same box as the picture */
   .tags {
     position: absolute;
     inset: 0;
@@ -556,9 +553,9 @@
     color: #5e554a;
   }
 
-  /* ------------------------------------------------------------ panels */
+  /* ============================================================ panels */
 
-  /* On a wide screen a panel is laid beside the landmark; on a phone it is a sheet that slides up over the foot of the picture. */
+  /* Beside the landmark on a wide screen, a sheet that slides up on a phone */
   .panel {
     position: absolute;
     top: 5.25rem;
@@ -580,7 +577,7 @@
       visibility 0s 700ms;
   }
 
-  /* Only the sheet itself takes the pointer; the empty space round it still belongs to the world. */
+  /* Only the sheet takes the pointer, the space round it belongs to the world */
   .overlay > .panel {
     pointer-events: none;
   }
@@ -607,7 +604,7 @@
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--color-rule) transparent;
-    /* Room for the sheet's shadow and ragged edge, which would otherwise be clipped by the scroller. */
+    /* Room for the shadow and ragged edge the scroller would otherwise clip */
     margin: -1.25rem;
     padding: 1.25rem;
   }
@@ -695,9 +692,9 @@
     text-decoration-color: currentColor;
   }
 
-  /* ------------------------------------------------------------ prompts and hints */
+  /* ============================================================ prompts and hints */
 
-  /* Paper that is lit: parchment under a lamp stays parchment at any hour, so what is written on it keeps its day colours. */
+  /* Paper under a lamp keeps its day colours at any hour */
   .lit {
     --color-canvas: #f6ecd3;
     --color-oat: #e9dcba;
@@ -712,7 +709,7 @@
     color-scheme: light;
   }
 
-  /* What a scene offers, as words on a scrap beside it. */
+  /* What a scene offers, as words on a scrap beside it */
   .prompts {
     position: absolute;
     left: clamp(1.25rem, 4vw, 4.5rem);
@@ -780,8 +777,7 @@
     color: var(--color-ink-soft);
   }
 
-  /* The open book's ribbon: what can be done with it, in words. The book in the picture carries its own words and its own
-     links, so the slip stays out of sight until the keyboard reaches for it. */
+  /* The links of the open book, out of sight until the keyboard reaches for them */
   .bookmark {
     position: absolute;
     left: 50%;
@@ -838,7 +834,7 @@
     background-size: 100% 0.42rem;
   }
 
-  /* A line of guidance, for the moment someone first stands in the train. */
+  /* A line of guidance for the first moment aboard */
   .hint {
     position: absolute;
     left: 50%;
@@ -869,7 +865,7 @@
     transition-delay: 0s;
   }
 
-  /* The postcard is laid over the middle of the picture, where the camera has just dropped to look straight down at it. */
+  /* The postcard lies in the middle, where the camera drops to look down at it */
   @media (min-width: 1024px) {
     .panel[data-centre='true'] {
       left: 50%;
@@ -885,7 +881,7 @@
         visibility 0s 800ms;
     }
 
-    /* It waits for the camera to finish coming down before it can be read. */
+    /* It waits for the camera to finish coming down */
     .panel[data-centre='true'][data-open='true'] {
       translate: -50% 0;
       scale: 1;
@@ -893,9 +889,9 @@
     }
   }
 
-  /* ------------------------------------------------------------ the sketchpad (about) */
+  /* ============================================================ the sketchpad (about) */
 
-  /* A wire-bound sketchpad lying open on the drafting table: a card back, two pages, and the wire along the top. */
+  /* A sketchpad open on the table, a card back, two pages and the wire */
   .sketchpad {
     position: relative;
     padding: 1.15rem 0.5rem 0.55rem;
@@ -908,7 +904,7 @@
       0 24px 34px -14px rgb(40 22 12 / 0.62);
   }
 
-  /* The wire: a row of loops over the top edge. */
+  /* The wire, a row of loops over the top edge */
   .sketchpad-wire {
     position: absolute;
     top: 0.2rem;
@@ -924,7 +920,7 @@
     container-type: inline-size;
     position: relative;
     border-radius: 2px 3px 3px 2px;
-    /* The holes the wire runs through, punched along the head of the sheet. */
+    /* The holes the wire runs through, punched along the head of the sheet */
     background:
       radial-gradient(circle at 50% 50%, #4d3323 0 0.2rem, transparent 0.23rem) 1rem 0.42rem / 1.5rem 0.9rem repeat-x,
       var(--color-canvas) var(--tooth);
@@ -948,7 +944,7 @@
     border-top: 1px dashed var(--color-rule);
   }
 
-  /* With room for it the pad shows both pages, with the fold between them. */
+  /* With room the pad shows both pages and the fold between them */
   @container (min-width: 37rem) {
     .sketchpad-spread {
       grid-template-columns: 1fr 1fr;
@@ -960,7 +956,7 @@
     }
   }
 
-  /* Headings in the fountain-pen hand; the running text in a pen-written textbook hand, which is what reads cleanly at length. */
+  /* Headings in the pen script, running text in the hand that reads at length */
   .page h2 {
     margin: 0;
     font-family: var(--font-script);
@@ -1025,7 +1021,7 @@
     color: var(--color-rust);
   }
 
-  /* ------------------------------------------------------------ the catalogue (projects) */
+  /* ============================================================ the catalogue (projects) */
 
   .volumes {
     display: grid;
@@ -1035,7 +1031,7 @@
     list-style: none;
   }
 
-  /* One entry: the book's spine in its own leather, and its title beside it. */
+  /* One entry, a leather spine with the title beside it */
   .volume {
     position: relative;
     display: grid;
@@ -1071,7 +1067,7 @@
     justify-items: center;
     border-radius: 4px 0 0 4px;
     background: linear-gradient(90deg, color-mix(in srgb, var(--leather) 72%, #000), var(--leather) 30%, color-mix(in srgb, var(--leather) 86%, #fff) 62%, color-mix(in srgb, var(--leather) 80%, #000));
-    /* The raised bands of a bound spine, in gilt. */
+    /* The raised bands of a bound spine, in gilt */
     box-shadow:
       inset 0 0.5rem 0 -0.38rem rgb(240 212 138 / 0.75),
       inset 0 -0.5rem 0 -0.38rem rgb(240 212 138 / 0.75);
@@ -1127,9 +1123,9 @@
     }
   }
 
-  /* ------------------------------------------------------------ the open book (one project) */
+  /* ============================================================ the open book (one project) */
 
-  /* The book that has just crossed the water, lying open: leather boards, and two parchment pages on them. */
+  /* The open book, leather boards with two parchment pages on them */
   .tome {
     width: min(60rem, calc(100vw - 1.25rem));
     max-width: none;
@@ -1155,7 +1151,7 @@
     animation: fade-in 500ms ease-out;
   }
 
-  /* The pages come up out of the book in the picture, which is lying a little below the middle of the view. */
+  /* The pages rise out of the book, which lies below the middle of the view */
   @keyframes open-book {
     from {
       opacity: 0;
@@ -1185,7 +1181,7 @@
       0 26px 36px -14px rgb(20 12 8 / 0.65);
   }
 
-  /* The stitching round the boards. */
+  /* The stitching round the boards */
   .tome-boards::before {
     content: '';
     position: absolute;
@@ -1195,7 +1191,7 @@
     pointer-events: none;
   }
 
-  /* Parchment: tanned toward the edges, the way a sheet ages from the outside in. */
+  /* Parchment tanned toward the edges, the way a sheet ages */
   .tome-leaves {
     container-type: inline-size;
     position: relative;
@@ -1229,7 +1225,7 @@
   @container (min-width: 42rem) {
     .tome-spread {
       grid-template-columns: 1fr 1fr;
-      /* The shadow of the gutter. */
+      /* The shadow of the gutter */
       background: linear-gradient(90deg, transparent 46.5%, rgb(92 59 41 / 0.24) 50%, transparent 53.5%);
     }
 
@@ -1242,7 +1238,7 @@
     }
   }
 
-  /* A still of the project, pasted in at the head of the page like a photograph. */
+  /* A still of the project, pasted in like a photograph */
   .leaf-still {
     display: block;
     width: 100%;
@@ -1293,7 +1289,7 @@
     line-height: 1.45;
   }
 
-  /* What the repository is made of: one brush stroke, a length of each colour for each language. */
+  /* The languages of a repository as one brush stroke */
   .blend {
     display: flex;
     height: 0.8rem;
@@ -1349,7 +1345,7 @@
     border-radius: 58% 42% 55% 45% / 45% 58% 42% 55%;
   }
 
-  /* Lines waiting to be written, while GitHub answers. */
+  /* Lines waiting to be written while GitHub answers */
   .waiting {
     display: grid;
     gap: 0.6rem;
@@ -1405,7 +1401,7 @@
     color: var(--color-ink-soft);
   }
 
-  /* An inked button: outline drawn with a pen, filling in when pressed toward. */
+  /* An inked button, an outline that fills in under the hand */
   .inked {
     display: inline-flex;
     align-items: center;
@@ -1470,9 +1466,9 @@
     color: var(--color-ink);
   }
 
-  /* ------------------------------------------------------------ the levers (skills) */
+  /* ============================================================ the levers (skills) */
 
-  /* The cab's four levers as a list, for a phone. */
+  /* The cab levers as a list, for a phone */
   .ways {
     margin: 1.1rem 0 0;
     padding: 0;
@@ -1503,7 +1499,7 @@
     translate: 0.4rem 0;
   }
 
-  /* A brass knob. Chosen, it lifts off the paper as the lever goes forward. */
+  /* A brass knob that lifts off the paper when chosen */
   .way-dab {
     grid-row: span 2;
     align-self: start;
@@ -1546,9 +1542,9 @@
     line-height: 1.4;
   }
 
-  /* ------------------------------------------------------------ the postcard (contact) */
+  /* ============================================================ the postcard (contact) */
 
-  /* A postcard from the desk: the message on one half, the address on the other, a line ruled between them. */
+  /* A postcard, the message on one half and the address on the other */
   .postcard {
     container-type: inline-size;
     padding: 1.6rem 1.7rem 1.4rem;
@@ -1587,7 +1583,7 @@
     }
   }
 
-  /* Where the stamp goes: the name of the line, franked in the corner. */
+  /* Where the stamp goes, franked in the corner */
   .postcard-stamp {
     float: right;
     margin: 0 0 0.6rem 1rem;
@@ -1639,7 +1635,7 @@
     color: var(--color-ink-soft);
   }
 
-  /* Fields are written straight onto the card's ruled lines; there are no boxes. */
+  /* Fields are written onto the ruled lines, with no boxes */
   .field input,
   .field textarea {
     width: 100%;
@@ -1694,11 +1690,9 @@
     color: var(--color-ink-soft);
   }
 
-  /* ------------------------------------------------------------ the sprout (loading) */
+  /* ============================================================ the sprout (loading) */
 
-  /* A small plant in the corner that grows while anything is being fetched.
-     The growth is a slow transition toward nearly-grown; when the work is
-     done the same transition is simply sent the rest of the way, quickly. */
+  /* A plant that grows while anything is fetched, then is sent the rest of the way */
   .sprout {
     position: absolute;
     left: clamp(0.6rem, 2vw, 1.6rem);
@@ -1774,7 +1768,7 @@
     }
   }
 
-  /* ------------------------------------------------------------ when the world cannot be painted */
+  /* ============================================================ when the world cannot be painted */
 
   .unpainted {
     position: absolute;
@@ -1788,7 +1782,7 @@
   }
 }
 
-/* People who ask for less motion get the same places with the travelling taken out. */
+/* Less motion means the same places with the travelling taken out */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

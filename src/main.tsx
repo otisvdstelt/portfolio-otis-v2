@@ -10,8 +10,7 @@ import './index.css'
 import App from './App.tsx'
 import { paintPhase, readPhase } from './lib/air'
 
-// Past seven in the evening the world is at night, and the page with it. Set
-// before the first paint so the paper never flashes the wrong colour.
+// Set before the first paint, so the paper never flashes the wrong colour
 paintPhase(readPhase())
 
 const queryClient = new QueryClient()

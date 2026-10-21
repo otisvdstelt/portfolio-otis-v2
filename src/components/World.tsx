@@ -19,66 +19,55 @@ export type { Volume }
 
 export interface WorldProps {
   place: PlaceId
-  /** The place's own words are out: the journal is being read, the card is being written. */
+  /** The words of the place are out, the journal read or the card written */
   open: boolean
-  /** `roam`: a free, damped camera with pointer parallax. `backdrop`: fixed views, for touch and modest hardware. */
+  /** roam is a free camera with parallax, backdrop is fixed views for touch */
   mode: 'roam' | 'backdrop'
   phase: Phase
   weather: Weather
   reducedMotion: boolean
   hot: Hot | null
-  /** The projects in the picture car's rack, one per tin. */
+  /** The projects in the rack of the picture car, one per tin */
   volumes: readonly Volume[]
-  /** The project in the lantern, or null. */
+  /** The project in the lantern, or null */
   tome: number | null
-  /** What there is to say about it. */
+  /** What there is to say about it */
   leaves: Leaves | null
-  /** The lever of the cab being pointed at or left pulled, or -1. */
+  /** The cab lever being pointed at or left pulled, or none */
   lever: number
-  /** How far to slide the picture aside for a panel, as fractions of the view: right, up. */
+  /** How far to slide the picture aside for a panel, as fractions of the view */
   shift: readonly [number, number]
   onHot: (hot: Hot | null) => void
   onVisit: (place: PlaceId, open?: boolean) => void
   onProject: (index: number) => void
   onLever: (index: number) => void
-  /** Put away whatever is out: the picture on the screen, the journal, the card. */
+  /** Put away whatever is out, the picture, the journal or the card */
   onClose: () => void
-  /** Ask GitHub for the project's figures again. */
+  /** Ask GitHub for the figures again */
   onAsk: () => void
-  /** The camera has reached a place. */
   onArrive: (place: PlaceId) => void
-  /** Called once the world is on screen. */
+  /** Once the world is on screen */
   onReady: () => void
 }
 
-// What each kind of device is asked to draw.
-/** While the lantern is running it is evening outside, whatever the hour. */
+/** While the lantern is running it is evening outside, whatever the hour */
 const SHOWING: Mood = { night: true }
 
+// What each kind of device is asked to draw
 const BUDGET = {
   roam: { dpr: [1, 1.75] as [number, number], motes: 170, rain: 1500, shadow: 2048, mirror: 1024 },
   backdrop: { dpr: [1, 1.5] as [number, number], motes: 90, rain: 700, shadow: 1024, mirror: 512 },
 }
 
-/**
- * The world: a sea, a line across it, and one train. Every section of the
- * site is that train fitted out for something; what it is fitted out with
- * follows the place the camera has actually reached, and the fog covers the
- * change.
- *
- * The model is read through Suspense (the file is preloaded the moment this
- * chunk arrives) and the lettering through `use()`, so the loading sprout
- * holds until every mesh is decoded and every sign can be drawn in the right
- * hand; nothing pops in afterwards.
- */
+/** A sea, a line across it, and one train fitted out for whichever place the camera has reached */
 export default function World({ place, open, mode, phase, weather, reducedMotion, hot, volumes, tome, leaves, lever, shift, onHot, onVisit, onProject, onLever, onClose, onAsk, onArrive, onReady }: WorldProps) {
   const parts = useWorldModel()
   use(lettering)
   const budget = BUDGET[mode]
-  // The place the camera has actually reached. It trails `place` by the length of the journey.
+  // The place the camera has actually reached, one journey behind place
   const [shown, setShown] = useState(place)
   const here = shown === place
-  // Until someone boards, the first view is a title card and the camera is not theirs to move.
+  // Until someone boards, the first view is a title card and the camera is fixed
   const roaming = mode === 'roam' && place !== 'halt'
   const cuts = mode === 'backdrop' || reducedMotion
   const reading = place === 'cinema' ? tome !== null : open
@@ -88,11 +77,11 @@ export default function World({ place, open, mode, phase, weather, reducedMotion
     return () => {
       document.body.style.cursor = ''
     }
-    // The world arrives once.
+    // The world arrives once
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // What stands where the middle car's north benches would be.
+  // What stands where the north benches of the middle car would be
   const fitting =
     shown === 'cinema' ? (
       <Cinema volumes={volumes} chosen={tome} leaves={leaves} hot={hot} here={here} reducedMotion={reducedMotion} onHot={onHot} onProject={onProject} onClose={onClose} onAsk={onAsk} />
@@ -111,12 +100,12 @@ export default function World({ place, open, mode, phase, weather, reducedMotion
       camera={{ fov: PLACES.halt.view.fov, near: 0.2, far: 1600, position: PLACES.halt.view.position as [number, number, number] }}
       onCreated={(state) => {
         state.camera.layers.enable(MEADOW_LAYER)
-        // In development the scene is handed to the console, so it can be stepped by hand while the tab is in the background.
+        // In development the scene is handed to the console, for poking at by hand
         if (import.meta.env.DEV) (window as unknown as { __world?: unknown }).__world = state
       }}
-      // One finger pans the page's sheets; the canvas keeps pinch and drag for the camera only when it is free.
+      // One finger pans the sheets, the canvas takes the gesture only when the camera is free
       style={{ touchAction: roaming ? 'none' : 'pan-y' }}
-      // A press on nothing in particular puts away whatever is being read.
+      // A press on nothing in particular puts away whatever is being read
       onPointerMissed={() => mode === 'roam' && reading && onClose()}
     >
       <PartsContext value={parts}>

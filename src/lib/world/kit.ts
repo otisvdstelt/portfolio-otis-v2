@@ -1,28 +1,24 @@
-// A small modelling kit: painted primitives that are stacked, leaned and
-// merged into everything that stands in the world. All of it is built from
-// simple solids, coloured per vertex, so one cel-shaded material paints it all.
+// A small modelling kit of painted primitives, stacked and merged into the world
+// All of it is simple solids coloured per vertex, so one material paints it all
 import { BoxGeometry, BufferAttribute, Color, CylinderGeometry, Euler, ExtrudeGeometry, IcosahedronGeometry, Matrix4, Path, Quaternion, Shape, TorusGeometry, Vector2, Vector3, type BufferGeometry } from 'three'
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { valueNoise } from './terrain.ts'
 
-/** One colour, or a wash from the foot of a piece to its top. */
+/** One colour, or a wash from the foot of a piece to its top */
 export type Tint = string | readonly [bottom: string, top: string]
 
-/** Where a piece goes once it is made. */
+/** Where a piece goes once it is made */
 export interface Place {
   at?: readonly [number, number, number]
   rot?: readonly [number, number, number]
   scale?: number | readonly [number, number, number]
 }
 
-/** A named mesh in the baked model. Geometry is given relative to `pivot`, the point the app moves or turns it about. */
+/** A named mesh in the baked model, given relative to the point it turns about */
 export interface Part {
   name: string
   geometry: BufferGeometry
-  /**
-   * `paint` is cel-shaded from vertex colours; `glass` is the same, see-through; `glow` is unlit and lights up
-   * at night; `light` is a shaft of sunlight, added onto whatever is behind it.
-   */
+  /** paint is cel shaded, glass is see through, glow is unlit, light is a sunbeam */
   material: 'paint' | 'glass' | 'glow' | 'light'
   pivot?: readonly [number, number, number]
 }
@@ -33,7 +29,7 @@ function fleck(x: number, y: number, z: number): number {
   return valueNoise(x * 3.1 + y * 1.7, z * 3.1 - y * 2.3)
 }
 
-/** Paints a piece. Brush flecks (a few per cent lighter or darker) keep flat colours from looking printed. */
+/** Paints a piece. Brush flecks keep flat colours from looking printed */
 export function tint<G extends BufferGeometry>(geometry: G, colour: Tint, flecks = 0.07): G {
   const position = geometry.getAttribute('position')
   const colors = new Float32Array(position.count * 3)
@@ -62,7 +58,7 @@ export function tint<G extends BufferGeometry>(geometry: G, colour: Tint, flecks
   return geometry
 }
 
-/** Moves, turns and scales a piece into its place. */
+/** Moves, turns and scales a piece into its place */
 export function put<G extends BufferGeometry>(geometry: G, place?: Place): G {
   if (!place) return geometry
   const { at = [0, 0, 0], rot = [0, 0, 0], scale = 1 } = place
@@ -79,20 +75,17 @@ const finish = (geometry: BufferGeometry, colour: Tint, place?: Place) => {
   return put(tint(geometry, colour), place)
 }
 
-/** A block standing on its base. */
+/** A block standing on its base */
 export function box(width: number, height: number, depth: number, colour: Tint, place?: Place): BufferGeometry {
   return finish(new BoxGeometry(width, height, depth).translate(0, height / 2, 0), colour, place)
 }
 
-/** A block named by its corners instead of its middle: walls, shelves, floors. */
+/** A block named by its corners instead of its middle, for walls and shelves */
 export function slab(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, colour: Tint): BufferGeometry {
   return box(Math.abs(x1 - x0), Math.abs(y1 - y0), Math.abs(z1 - z0), colour, { at: [(x0 + x1) / 2, Math.min(y0, y1), (z0 + z1) / 2] })
 }
 
-/**
- * A flat outline pushed through a thickness: gables, arches, a wall with a round window in it.
- * Drawn in x and y, centred on z. `hole` cuts a circle out of it: [x, y, radius].
- */
+/** A flat outline pushed through a thickness, drawn in x and y, with an optional hole */
 export function extrude(outline: readonly (readonly [number, number])[], depth: number, colour: Tint, place?: Place, hole?: readonly [number, number, number]): BufferGeometry {
   const shape = new Shape(outline.map(([x, y]) => new Vector2(x, y)))
   if (hole) shape.holes.push(new Path().absarc(hole[0], hole[1], hole[2], 0, Math.PI * 2, true))
@@ -101,22 +94,22 @@ export function extrude(outline: readonly (readonly [number, number])[], depth: 
   return put(tint(mergeVertices(raw, 1e-4), colour), place)
 }
 
-/** A post, log or tower standing on its base; `sides` as low as 3 makes a prism. */
+/** A post or tower standing on its base. Three sides makes a prism */
 export function cyl(topRadius: number, bottomRadius: number, height: number, colour: Tint, place?: Place, sides = 10): BufferGeometry {
   return finish(new CylinderGeometry(topRadius, bottomRadius, height, sides, 1).translate(0, height / 2, 0), colour, place)
 }
 
-/** A cone standing on its base. */
+/** A cone standing on its base */
 export function cone(radius: number, height: number, colour: Tint, place?: Place, sides = 10): BufferGeometry {
   return cyl(0.001, radius, height, colour, place, sides)
 }
 
-/** A ring standing upright, facing z: strap handles, hoops, wreaths. Centred. */
+/** A ring standing upright and centred, for handles and hoops */
 export function ring(radius: number, thickness: number, colour: Tint, place?: Place, sides = 12): BufferGeometry {
   return finish(new TorusGeometry(radius, thickness, 5, sides), colour, place)
 }
 
-/** A lumpy ball, centred: leaves, bushes, stones, clouds, smoke. */
+/** A lumpy ball, centred, for leaves, stones, clouds and smoke */
 export function blob(radius: number, colour: Tint, place?: Place, lumpiness = 0.2, seed = 0, detail = 2): BufferGeometry {
   const sphere = new IcosahedronGeometry(1, detail)
   sphere.deleteAttribute('uv')
@@ -134,7 +127,7 @@ export function blob(radius: number, colour: Tint, place?: Place, lumpiness = 0.
   return put(tint(geometry, colour), place)
 }
 
-/** Nudges every corner a little, the same way wherever corners meet, so timber looks cut by hand. */
+/** Nudges every corner the same way, so timber looks cut by hand */
 export function roughen<G extends BufferGeometry>(geometry: G, amount: number, seed = 0): G {
   const position = geometry.getAttribute('position')
   for (let i = 0; i < position.count; i++) {
@@ -154,7 +147,7 @@ export function roughen<G extends BufferGeometry>(geometry: G, amount: number, s
   return geometry
 }
 
-/** Flips a piece across the line of the railway (z becomes -z), keeping its faces the right way out. */
+/** Flips a piece across the line of the railway, keeping its faces out */
 export function mirrorZ<G extends BufferGeometry>(geometry: G): G {
   geometry.scale(1, 1, -1)
   const index = geometry.getIndex()
@@ -168,7 +161,7 @@ export function mirrorZ<G extends BufferGeometry>(geometry: G): G {
   return geometry
 }
 
-/** Merges pieces into one mesh. */
+/** Merges pieces into one mesh */
 export function join(pieces: readonly BufferGeometry[]): BufferGeometry {
   const merged = mergeGeometries(pieces as BufferGeometry[], false)
   if (!merged) throw new Error('pieces could not be merged')
@@ -176,14 +169,14 @@ export function join(pieces: readonly BufferGeometry[]): BufferGeometry {
   return merged
 }
 
-/** A named part, with its geometry re-centred on the point it will turn or move about. */
+/** A named part, centred again on the point it will turn or move about */
 export function part(name: string, pieces: readonly BufferGeometry[], material: Part['material'] = 'paint', pivot?: readonly [number, number, number]): Part {
   const geometry = join(pieces)
   if (pivot) geometry.translate(-pivot[0], -pivot[1], -pivot[2])
   return { name, geometry, material, pivot }
 }
 
-/** A named part whose pieces were already built around the point it hangs or turns from. */
+/** A named part whose pieces were built around the point it hangs from */
 export function hung(name: string, pieces: readonly BufferGeometry[], pivot: readonly [number, number, number], material: Part['material'] = 'paint'): Part {
   return { name, geometry: join(pieces), material, pivot }
 }
@@ -191,7 +184,7 @@ export function hung(name: string, pieces: readonly BufferGeometry[], pivot: rea
 const UP = new Vector3(0, 1, 0)
 const ONE = new Vector3(1, 1, 1)
 
-/** A tapering limb from one point to another: roots, branches, braces, crossed logs. */
+/** A tapering limb from one point to another, for roots, branches and braces */
 export function limb(from: readonly [number, number, number], to: readonly [number, number, number], fromRadius: number, toRadius: number, colour: Tint, sides = 8): BufferGeometry {
   const direction = new Vector3(to[0] - from[0], to[1] - from[1], to[2] - from[2])
   const length = direction.length()

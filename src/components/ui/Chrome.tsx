@@ -3,15 +3,12 @@ import { OWNER } from '../../content/site'
 import type { Phase, Weather } from '../../lib/air'
 import { PLACES, ROUTE, type PlaceId } from '../../lib/places'
 
-/**
- * The filters that make paper look torn and paint look wet. Defined once;
- * the stylesheet refers to them by id.
- */
+/** The filters that make paper look torn and paint look wet, named by the stylesheet */
 export function PaperFilters() {
   return (
     <svg width="0" height="0" aria-hidden="true" style={{ position: 'absolute' }}>
       <defs>
-        {/* The deckle: the uneven edge of a hand-made sheet. */}
+        {/* The deckle, the uneven edge of a sheet made by hand */}
         <filter id="deckle" x="-4%" y="-4%" width="108%" height="108%">
           <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="4" result="grain" />
           <feDisplacementMap in="SourceGraphic" in2="grain" scale="7" xChannelSelector="R" yChannelSelector="G" />
@@ -20,12 +17,12 @@ export function PaperFilters() {
           <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="11" result="grain" />
           <feDisplacementMap in="SourceGraphic" in2="grain" scale="4.5" xChannelSelector="R" yChannelSelector="G" />
         </filter>
-        {/* A brush that will not hold a perfectly even line. */}
+        {/* A brush that will not hold an even line */}
         <filter id="wobble" x="-10%" y="-10%" width="120%" height="120%">
           <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="7" result="grain" />
           <feDisplacementMap in="SourceGraphic" in2="grain" scale="3.5" xChannelSelector="R" yChannelSelector="G" />
         </filter>
-        {/* Pigment spreading into wet paper. */}
+        {/* Pigment spreading into wet paper */}
         <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
           <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="2" result="grain" />
           <feDisplacementMap in="SourceGraphic" in2="grain" scale="14" xChannelSelector="R" yChannelSelector="G" />
@@ -37,7 +34,7 @@ export function PaperFilters() {
 }
 
 interface HeaderProps {
-  /** At the halt the big title already says the name. */
+  /** At the halt the big title already says the name */
   atHome: boolean
   weather: Weather
   phase: Phase
@@ -46,7 +43,7 @@ interface HeaderProps {
   onPhase: (phase: Phase) => void
 }
 
-/** The top of the page: the name on a scrap of paper, and the hour and the weather, each as two words. */
+/** The top of the page, the name on a scrap and the hour and weather as two words */
 export function Header({ atHome, weather, phase, onHome, onWeather, onPhase }: HeaderProps) {
   const raining = weather === 'rain'
   const dark = phase === 'night'
@@ -56,7 +53,7 @@ export function Header({ atHome, weather, phase, onHome, onWeather, onPhase }: H
         {OWNER.name}
       </button>
       <div className="flex flex-wrap items-start justify-end gap-2.5">
-        {/* Switches written as two words: the one that is true is underlined. */}
+        {/* Switches written as two words, with the true one underlined */}
         <button type="button" role="switch" aria-checked={dark} aria-label="Night" className="slip paper weather pointer-events-auto" onClick={() => onPhase(dark ? 'day' : 'night')}>
           <span className="weather-word" data-on={!dark}>
             day
@@ -86,12 +83,12 @@ export function Header({ atHome, weather, phase, onHome, onWeather, onPhase }: H
 
 interface LandingProps {
   shown: boolean
-  /** False while the world is still loading. */
+  /** False while the world is still loading */
   ready: boolean
   onBoard: () => void
 }
 
-/** The title card over the sea: the name and the title in a written hand, and the way aboard. */
+/** The title card over the sea, the name, the title and the way aboard */
 export function Landing({ shown, ready, onBoard }: LandingProps) {
   return (
     <section className="landing" data-shown={shown} inert={!shown} aria-labelledby="owner-name">
@@ -112,11 +109,7 @@ interface TrailProps {
   onVisit: (place: PlaceId) => void
 }
 
-/**
- * The route map: the train and its four stops, by name, along one drawn
- * line. On a desktop it lies along the foot of the picture; on a phone it is
- * the menu, pinned to the bottom of the screen.
- */
+/** The route map, the train and its four stops along one drawn line */
 export function Trail({ place, shown, onVisit }: TrailProps) {
   return (
     <nav className="trail paper" data-shown={shown} inert={!shown} aria-label="Route map">
@@ -135,29 +128,25 @@ export function Trail({ place, shown, onVisit }: TrailProps) {
   )
 }
 
-/** One thing that can be done in a scene, written out. */
+/** One thing that can be done in a scene, written out */
 export interface Prompt {
   label: string
   note?: string
-  /** Lit because the thing itself is under the pointer. */
+  /** Lit because the thing itself is under the pointer */
   hot?: boolean
   onPress: () => void
-  /** Pointing at the words is pointing at the thing. */
+  /** Pointing at the words is pointing at the thing */
   onPoint?: (over: boolean) => void
 }
 
 interface PromptsProps {
   shown: boolean
-  /** A line of introduction in the visitor's margin: "One tin in the rack". */
+  /** A line of introduction, such as one tin in the rack */
   title: string
   prompts: readonly Prompt[]
 }
 
-/**
- * What a scene offers, as plain words on a scrap of paper beside it. The
- * things themselves can be pressed in the picture; this says so, and gives
- * the keyboard the same reach as the pointer.
- */
+/** What a scene offers as words beside it, giving the keyboard the reach of a pointer */
 export function Prompts({ shown, title, prompts }: PromptsProps) {
   return (
     <nav className="prompts paper" data-shown={shown} inert={!shown} aria-label="In this scene">
@@ -176,7 +165,7 @@ export function Prompts({ shown, title, prompts }: PromptsProps) {
   )
 }
 
-/** A line of guidance on a slip of paper, for the moment someone first stands in the train. */
+/** A line of guidance on a slip, for the first moment aboard */
 export function Hint({ shown, children }: { shown: boolean; children: ReactNode }) {
   return (
     <p className="hint slip paper" data-shown={shown} aria-hidden={!shown}>

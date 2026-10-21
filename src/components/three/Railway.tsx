@@ -13,29 +13,28 @@ import { dry, glass, glow, paintedToon } from './materials'
 import { Piece, Tag } from './Piece'
 import { pressable } from './press'
 
-// Telegraph posts stand along the north side of the line, a whole number of them to a lap, and on ahead until the haze
-// has them: from the cab the line is looked straight along. Nothing else breaks the sea.
+// Telegraph posts along the line, a whole number to a lap, on ahead into the haze
 const POSTS = Array.from({ length: 22 }, (_, i) => (i - 5) * CRUISE.postEvery)
 const LAP = CRUISE.to - CRUISE.from
 if (LAP % CRUISE.postEvery !== 0) throw new Error('the posts must stand a whole number of laps apart')
 
-/** A railcar's paint. Under its own roof (the floor, the benches, the inside of the walls) it stays dry in the rain. */
+/** Railcar paint, which stays dry under its own roof */
 const carPaint = paintedToon({ shelter: CAR.ceiling + 0.2 })
 
 interface Seats {
   hot: Hot | null
-  /** The visitor is in the car, so its benches answer to the pointer. */
+  /** The visitor is in the car, so its benches answer to the pointer */
   live: boolean
   onHot: (hot: Hot | null) => void
   onVisit: (place: PlaceId) => void
 }
 
-/** One bench of the middle car. Each is the way to a destination: choose it and you are walked to the seat across from it. */
+/** One bench of the middle car, each the way to a destination */
 function Bench({ index, x, seats }: { index: number; x: number; seats: Seats }) {
   const lift = useRef<Group>(null)
   const destination = DESTINATIONS[index]
   const isHot = seats.hot?.kind === 'seat' && seats.hot.index === index
-  // A chosen bench rises a hand's breadth off the floor, as if the car had gone over a join in the rails.
+  // A chosen bench rises a little, as if the car had gone over a join in the rails
   useFrame((_, delta) => {
     if (lift.current) lift.current.position.y = MathUtils.damp(lift.current.position.y, isHot ? 0.07 : 0, 10, delta)
   })
@@ -56,11 +55,11 @@ function Bench({ index, x, seats }: { index: number; x: number; seats: Seats }) 
   )
 }
 
-/** One car. `fitting`, when given, stands where the north benches would be. */
+/** One car. A fitting, when given, stands where the north benches would be */
 function Car({ offset, seats, onBoard, fitting }: { offset: number; seats?: Seats; onBoard?: () => void; fitting?: ReactNode }) {
   return (
     <group position={[offset, 0, 0]}>
-      {/* From the platform, any car is the way aboard. */}
+      {/* From the platform, any car is the way aboard */}
       <Piece name="Car_Body" material={carPaint} line={0.03} {...(onBoard ? pressable(onBoard) : {})} />
       <Piece name="Car_Glass" material={glass} line={0} castShadow={false} />
       <Piece name="Car_Glow" material={glow} line={0} castShadow={false} />
@@ -71,32 +70,28 @@ function Car({ offset, seats, onBoard, fitting }: { offset: number; seats?: Seat
 
 export interface RailwayProps {
   place: PlaceId
-  /** Devices shown fixed views do not move the train at all. */
+  /** Devices shown fixed views do not move the train at all */
   still: boolean
   hot: Hot | null
   onHot: (hot: Hot | null) => void
   onVisit: (place: PlaceId) => void
-  /** What the middle car is fitted out with in place of its north benches, or null while it is the passenger car. */
+  /** What stands in place of the north benches, or null in the passenger car */
   fitting: ReactNode
-  /** The driver's cab, while the front of the train is where the visitor is; it stands in for the front car. */
+  /** The cab, which stands in for the front car while the visitor is there */
   cab: ReactNode
 }
 
-/**
- * The line across the sea: the floating halt, the rails, the posts, and the
- * red train. Its middle car is the hub of the whole site: every other scene
- * is reached from one of its window seats.
- */
+/** The line across the sea, the floating halt, the rails, the posts and the red train */
 export function Railway({ place, still, hot, onHot, onVisit, fitting, cab }: RailwayProps) {
   const cars = useRef<Group>(null)
   const lamp = useRef<PointLight>(null)
 
-  // The train moves first, before the camera asks where it is.
+  // The train moves first, before the camera asks where it is
   useFrame((_, delta) => {
     runTrain(Math.min(delta, 0.25), still)
     if (cars.current) {
       cars.current.position.x = train.x
-      // A little life in the springs while it is under way.
+      // A little life in the springs while it is under way
       cars.current.position.y = still ? 0 : Math.sin(air.time.value * 7.3) * 0.004 * Math.min(1, train.speed / 4)
     }
     if (lamp.current) lamp.current.intensity = (0.9 + air.night.value * 6) * air.house.value
@@ -107,7 +102,7 @@ export function Railway({ place, still, hot, onHot, onVisit, fitting, cab }: Rai
   return (
     <>
       <Piece name="Line_Rails" line={0} castShadow={false} />
-      {/* The same rails again, laid on from the end of the first, so the line never stops short of the horizon. */}
+      {/* The same rails again from the end of the first, so the line never stops short */}
       <Piece name="Line_Rails" line={0} castShadow={false} position={[TRACK.east - TRACK.west, 0, 0]} />
       {POSTS.map((x) => (
         <Piece key={x} name="Line_Post" position={[x, 0, -2.5]} line={0.03} />

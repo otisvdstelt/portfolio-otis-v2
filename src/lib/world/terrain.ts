@@ -1,8 +1,7 @@
-// The lie of the sea, and of the one piece of land in it. The world is a flat
-// sea with five scenes standing far apart on it; the asset script and the app
-// both ask this file where things are.
+// The lie of the sea, a flat sheet with the scenes standing far apart on it
+// Both the asset script and the app ask this file where things are
 
-// ------------------------------------------------------------ noise
+// ============================================================ noise
 
 function hash2(ix: number, iz: number): number {
   let h = Math.imul(ix, 374761393) ^ Math.imul(iz, 668265263)
@@ -10,7 +9,7 @@ function hash2(ix: number, iz: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295
 }
 
-/** Smooth value noise in 0..1; the same everywhere it is asked. */
+/** Smooth value noise in 0 to 1, the same everywhere it is asked */
 export function valueNoise(x: number, z: number): number {
   const ix = Math.floor(x)
   const iz = Math.floor(z)
@@ -25,7 +24,7 @@ export function valueNoise(x: number, z: number): number {
   return a + (b - a) * ux + (c - a) * uz + (a - b - c + d) * ux * uz
 }
 
-/** A few octaves of value noise, still 0..1. */
+/** A few octaves of value noise, still 0 to 1 */
 export function fbm(x: number, z: number, octaves = 4): number {
   let sum = 0
   let amplitude = 0.5
@@ -40,7 +39,7 @@ export function fbm(x: number, z: number, octaves = 4): number {
   return sum / total
 }
 
-/** A small seeded random stream, so every bake and every visit scatter things the same way. */
+/** A seeded random stream, so every bake scatters things the same way */
 export function seeded(seed: number): () => number {
   let a = seed >>> 0
   return () => {
@@ -57,14 +56,14 @@ export const smoothstep = (edge0: number, edge1: number, x: number): number => {
   return t * t * (3 - 2 * t)
 }
 
-// ------------------------------------------------------------ the map
+// ============================================================ the map
 
-/** The sea is perfectly flat, and it is the zero everything else is measured from. */
+/** The sea is flat, and it is the zero everything else is measured from */
 export const SEA_Y = 0
-/** The halt's deck and the floors of the train stand at one height above the water. */
+/** The deck of the halt and the floors of the train stand this high above the water */
 export const DECK = 1
-/** The railway runs along z = 0, east from the halt at x = 0. */
+/** The railway runs along z = 0, east from the halt at x = 0 */
 export const TRACK = { west: -420, east: 420, gauge: 1.44 }
-/** While the train is under way it runs round this stretch for ever; telegraph posts stand along it. */
+/** The stretch the train runs round while under way, with posts along it */
 export const CRUISE = { from: 80, to: 200, speed: 9, postEvery: 40 }
 

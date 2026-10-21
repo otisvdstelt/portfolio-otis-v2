@@ -1,18 +1,18 @@
 import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
-/** One project. The file is public/data/projects.json: one entry per tin in the picture car's rack, in order (there is room for four). */
+/** One project, as listed in public/data/projects.json, in order, with room for four */
 export interface Seat {
   id: string
-  /** The repository on GitHub, as `owner/name`. Its figures are fetched live. */
+  /** The repository on GitHub, as owner then name. Its figures are fetched live */
   repo: string
   title: string
-  /** A few words on what it is: "A tournament site". */
+  /** A few words on what it is */
   kind: string
-  /** In Otis's own words. Shown as it is; GitHub's description is used only when this is empty. */
+  /** Shown as it is. The GitHub description is used only when this is empty */
   summary: string
   stack: string[]
-  /** A still of it for the screen, as a path under public/. Left out, the screen says there is no picture yet. */
+  /** A still for the screen, as a path under public. Left out, the screen says so */
   image?: string
 }
 
@@ -22,7 +22,7 @@ async function fetchSeats(): Promise<Seat[]> {
   return (await response.json()) as Seat[]
 }
 
-/** Who is riding. Ships with the site and does not change during a visit: fetched once and kept. */
+/** Who is riding. It ships with the site, so it is fetched once and kept */
 export const seatsQuery = queryOptions({
   queryKey: ['seats'],
   queryFn: fetchSeats,
@@ -31,28 +31,28 @@ export const seatsQuery = queryOptions({
   retry: 1,
 })
 
-/** Suspends until the passenger list is in; the sprout in the corner grows meanwhile. */
+/** Suspends until the passenger list is in, while the sprout grows */
 export const useSeats = () => useSuspenseQuery(seatsQuery)
 
-/** What GitHub knows about one repository, reduced to what the parchment shows. */
+/** What GitHub knows about one repository, reduced to what the parchment shows */
 export interface Repository {
   fullName: string
   description: string | null
-  /** The repository's page, and the live site if one is set. */
+  /** The page of the repository, and the live site if one is set */
   url: string
   homepage: string | null
   stars: number
   forks: number
   openIssues: number
-  /** ISO dates. */
+  /** ISO dates */
   createdAt: string
   pushedAt: string
-  /** Share of the code in each language, largest first, as fractions of 1. */
+  /** Share of the code in each language, largest first, as fractions of 1 */
   languages: { name: string; share: number }[]
   licence: string | null
 }
 
-/** GitHub answered, but not with the repository: it has moved, or the hourly allowance for anonymous questions is spent. */
+/** GitHub answered, but not with the repository. It moved, or the allowance is spent */
 export class Refused extends Error {
   status: number
   constructor(status: number) {
@@ -100,12 +100,7 @@ async function fetchRepository(repo: string, signal: AbortSignal): Promise<Repos
   }
 }
 
-/**
- * One repository's figures, straight from GitHub. Asked for only when its
- * seat is chosen, then kept for half an hour, so walking back and forth along
- * the car costs nothing. A refusal is not retried: asking again only spends
- * more of the allowance.
- */
+/** Figures from GitHub, asked for when a seat is chosen and then kept for half an hour */
 export const repositoryQuery = (repo: string) =>
   queryOptions({
     queryKey: ['repository', repo],
@@ -117,32 +112,29 @@ export const repositoryQuery = (repo: string) =>
 
 export const useRepository = (repo: string | undefined) => useQuery({ ...repositoryQuery(repo ?? ''), enabled: Boolean(repo) })
 
-/** Everything there is to say about one project, as plain words: the scene throws them on the screen, the page reads them out. */
+/** Everything there is to say about one project, as plain words */
 export interface Leaves {
-  /** "Volume II" */
+  /** Such as Volume II */
   volume: string
   title: string
   kind: string
   summary: string
   stack: string
-  /** What GitHub says about the repository: its figures, or a line saying why there are none (yet). */
+  /** The figures from GitHub, or a line saying why there are none */
   figures: { languages: readonly { name: string; share: number }[]; rows: readonly (readonly [label: string, value: string])[] } | { waiting: true } | { trouble: string }
-  /** Where it runs, if anywhere, and where its source is. */
+  /** Where it runs, if anywhere, and where its source is */
   live: string | null
   source: string
-  /** A still of it, as an address the page can load, or null. */
+  /** A still of it, as an address the page can load, or null */
   image: string | null
 }
 
 export const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI']
 const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-/** A date as it would be written by hand: 12 October 2026. */
+/** A date as it would be written by hand */
 export const written = (iso: string) => day.format(new Date(iso))
 
-/**
- * The words for one book, with GitHub's figures as they stand: asked for
- * when the book is chosen, and kept by the query cache after that.
- */
+/** The words for one book, with the GitHub figures as they stand */
 export function useLeaves(seat: Seat | undefined, index: number | null): { leaves: Leaves | null; ask: () => void } {
   const { data, error, refetch } = useRepository(seat?.repo)
   const leaves = useMemo<Leaves | null>(() => {

@@ -2,28 +2,18 @@ import { useIsFetching } from '@tanstack/react-query'
 import { useEffect, useLayoutEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { progress } from '../../lib/progress'
 
-/**
- * The Suspense fallback. It draws nothing itself: while it is mounted it
- * tells the sprout in the corner that something is still on its way, and
- * when React swaps it for the loaded thing the sprout knows to finish. The
- * sprout stays one element throughout, so nothing shifts when loading ends.
- */
+/** The Suspense fallback. It draws nothing and only tells the sprout to hold */
 export function Sprouting() {
   useLayoutEffect(() => progress.hold(), [])
   return null
 }
 
-/**
- * A small watercolour sprout in the corner of the page. It grows, slowly,
- * for as long as anything is being fetched: the world's model at the start,
- * a repository's figures later on. The page behind it is never blanked or
- * moved; the sprout is the whole of the loading state.
- */
+/** A small sprout in the corner that grows while anything is being fetched */
 export function Sprout() {
   const pending = useSyncExternalStore(progress.subscribe, progress.pending)
   const fetching = useIsFetching() > 0
   const busy = pending || fetching
-  // Stay a moment after the work is done, long enough to be seen to finish growing.
+  // Stay a moment after the work is done, long enough to be seen finishing
   const [shown, setShown] = useState(busy)
   if (busy && !shown) setShown(true)
 
@@ -37,7 +27,7 @@ export function Sprout() {
 }
 
 function Plant({ done }: { done: boolean }) {
-  // Drawn first as a bare patch of earth; growing starts on the next frame, so there is something to grow from.
+  // Drawn first as bare earth, so the next frame has something to grow from
   const [growing, setGrowing] = useState(false)
   useEffect(() => {
     const frame = requestAnimationFrame(() => setGrowing(true))
@@ -47,7 +37,7 @@ function Plant({ done }: { done: boolean }) {
   return (
     <div className="sprout" data-growing={growing} data-done={done} role="status" aria-live="polite">
       <svg viewBox="0 0 160 190" aria-hidden="true">
-        {/* The damp patch of earth it grows from. */}
+        {/* The damp patch of earth it grows from */}
         <ellipse cx="80" cy="172" rx="50" ry="11" fill="#8c5f3e" opacity="0.28" filter="url(#bleed)" />
         <ellipse cx="80" cy="172" rx="34" ry="6.5" fill="#6c4b37" opacity="0.5" filter="url(#wobble)" />
         <g className="sprout-sway">

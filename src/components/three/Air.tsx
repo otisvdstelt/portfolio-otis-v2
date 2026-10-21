@@ -7,7 +7,7 @@ import { seeded } from '../../lib/world/terrain'
 import { look, MEADOW_LAYER } from './look'
 import { paintedToon } from './materials'
 
-// ------------------------------------------------------------ motes and fireflies
+// ============================================================ motes and fireflies
 
 const moteVertex = /* glsl */ `
   uniform float uTime;
@@ -19,15 +19,14 @@ const moteVertex = /* glsl */ `
   const vec3 BOX = vec3(26.0, 9.0, 26.0);
 
   void main() {
-    // Dust rises slowly through the warm air, wandering a little as it goes;
-    // fireflies wander in small loops instead and keep close to the ground.
+    // Dust rises through the warm air, fireflies loop and keep near the ground
     vec3 p = position;
     p.y = mod(p.y + uTime * (0.1 + aSeed.x * 0.16), BOX.y);
     p.x += sin(uTime * (0.2 + aSeed.y * 0.3) + aSeed.w * 6.28) * 0.5;
     p.z += cos(uTime * (0.17 + aSeed.z * 0.3) + aSeed.w * 4.0) * 0.5;
     vec3 loop = vec3(sin(uTime * (0.4 + aSeed.x) + aSeed.w * 6.28), sin(uTime * (0.7 + aSeed.y) + aSeed.z * 6.28) * 0.5, cos(uTime * (0.5 + aSeed.z) + aSeed.w * 3.0)) * 1.4;
     p = mix(p, vec3(position.x, position.y * 0.3, position.z) + loop, uNight);
-    // Keep the cloud of them wrapped round whatever is being looked at.
+    // Keep the cloud of them wrapped round whatever is being looked at
     p.xz = mod(p.xz - uCentre.xz + BOX.xz * 0.5, BOX.xz) - BOX.xz * 0.5 + uCentre.xz;
     p.y += uCentre.y - mix(3.0, 1.2, uNight);
 
@@ -55,7 +54,7 @@ const moteFragment = /* glsl */ `
   }
 `
 
-/** Golden dust rising in the last sunlight; after dark the same points sink toward the ground and blink as fireflies. */
+/** Golden dust in the last sunlight, and after dark the same points blink as fireflies */
 export function Motes({ count }: { count: number }) {
   const geometry = useMemo(() => {
     const random = seeded(31)
@@ -102,7 +101,7 @@ export function Motes({ count }: { count: number }) {
   return <points geometry={geometry} material={material} layers={MEADOW_LAYER} frustumCulled={false} renderOrder={8} />
 }
 
-// ------------------------------------------------------------ rain
+// ============================================================ rain
 
 const rainVertex = /* glsl */ `
   uniform float uTime;
@@ -116,7 +115,7 @@ const rainVertex = /* glsl */ `
     float speed = 15.0 + aSeed.x * 7.0;
     vec3 p = position;
     p.y -= uTime * speed;
-    // A light wind: every drop falls a little to the east.
+    // A light wind, so every drop falls a little to the east
     p.x += (BOX.y - mod(p.y, BOX.y)) * 0.12;
     p = mod(p - uCentre + BOX * 0.5, BOX) - BOX * 0.5 + uCentre;
     p.y += aEnd * (0.55 + aSeed.y * 0.5);
@@ -135,7 +134,7 @@ const rainFragment = /* glsl */ `
   }
 `
 
-/** A gentle rain: short pale strokes falling round the camera. Present all the time, visible only when it rains. */
+/** Short pale strokes round the camera, there all the time and shown only in rain */
 export function Rain({ count }: { count: number }) {
   const geometry = useMemo(() => {
     const random = seeded(59)
@@ -171,7 +170,7 @@ export function Rain({ count }: { count: number }) {
   const centre = useMemo(() => new Vector3(), [])
 
   useFrame((state) => {
-    // Rain falls where the visitor is looking: a little in front of the camera.
+    // Rain falls a little in front of the camera, where the visitor is looking
     state.camera.getWorldDirection(centre).multiplyScalar(14).add(state.camera.position)
     material.uniforms.uCentre.value.copy(centre)
     material.visible = air.rain.value > 0.01
@@ -180,7 +179,7 @@ export function Rain({ count }: { count: number }) {
   return <lineSegments geometry={geometry} material={material} layers={MEADOW_LAYER} frustumCulled={false} renderOrder={9} />
 }
 
-// ------------------------------------------------------------ smoke and steam
+// ============================================================ smoke and steam
 
 const puffGeometry = new IcosahedronGeometry(1, 1)
 const puffColours = new Float32Array(puffGeometry.getAttribute('position').count * 3).fill(1)
@@ -189,20 +188,17 @@ const dummy = new Object3D()
 
 interface SmokeProps {
   position: readonly [number, number, number]
-  /** How high a puff climbs before it thins away. */
+  /** How high a puff climbs before it thins away */
   rise: number
   size: number
   colour?: string
   puffs?: number
-  /** Seconds a puff lives. */
+  /** Seconds a puff lives */
   life?: number
   opacity?: number
 }
 
-/**
- * A column of cel-shaded puffs: each swells as it climbs, leans with the wind and shrinks to nothing.
- * They are thin washes, see-through and kept out of the depth buffer. Small, it is the steam off a mug of tea.
- */
+/** A column of puffs, each swelling as it climbs and leaning with the wind */
 export function Smoke({ position, rise, size, colour = '#f4ecdc', puffs = 6, life = 5, opacity = 0.6 }: SmokeProps) {
   const mesh = useRef<InstancedMesh>(null)
   const material = useMemo(() => {

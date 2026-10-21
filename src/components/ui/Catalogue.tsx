@@ -42,7 +42,7 @@ function Volumes({ hot, onHot, onProject }: CatalogueProps) {
   )
 }
 
-/** The picture car's programme: one entry per tin in the rack. Picking one puts it in the lantern. */
+/** The programme, one entry per tin in the rack */
 export function Catalogue(props: CatalogueProps) {
   return (
     <div className="paper sheet">
@@ -73,9 +73,9 @@ export function Catalogue(props: CatalogueProps) {
   )
 }
 
-// ------------------------------------------------------------ the open book
+// ============================================================ the open book
 
-/** A web address as it would be written on a luggage label: no scheme, no trailing slash. */
+/** A web address as written on a luggage label, with no scheme and no trailing slash */
 const asPath = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
 function Figures({ repository }: { repository: Repository }) {
@@ -84,7 +84,7 @@ function Figures({ repository }: { repository: Repository }) {
     <>
       {shares.length > 0 && (
         <>
-          {/* What the code is actually made of, as GitHub measures it. */}
+          {/* What the code is made of, as GitHub measures it */}
           <div className="blend" role="img" aria-label={`Languages: ${shares.map(({ name, share }) => `${name} ${Math.round(share * 100)} percent`).join(', ')}`}>
             {shares.map(({ name, share }) => (
               <span key={name} style={{ flexGrow: share }} />
@@ -200,25 +200,18 @@ function Spread({ seat, index, onClose }: { seat: Seat; index: number; onClose: 
 }
 
 interface OpenBookProps {
-  /** Which book is open, or null for none. */
+  /** Which book is open, or null for none */
   index: number | null
-  /** The catalogue, if it has arrived. */
+  /** The catalogue, if it has arrived */
   seats: readonly Seat[] | undefined
   onClose: () => void
 }
 
-/**
- * One project, on the two parchment pages of its book, for a phone: there
- * the book in the picture is too small to read, so its pages are laid over
- * it as text. (On a wide screen the words are set on the book itself; see
- * three/Cinema.tsx.) It is a true modal: it takes the whole of the
- * visitor's attention and gives it back with Escape, the words at its foot,
- * or a press outside the book.
- */
+/** One project on two pages, for a phone, where the book in the picture is too small */
 export function OpenBook({ index, seats, onClose }: OpenBookProps) {
   const dialog = useRef<HTMLDialogElement>(null)
   const seat = index === null ? undefined : seats?.[index]
-  // Keep the last pages in the book while it closes, so it does not blank mid-way (adjusted during render, not in an effect).
+  // Keep the last pages while the book closes, so it does not blank halfway
   const [shown, setShown] = useState<{ seat: Seat; index: number } | null>(null)
   if (seat && index !== null && shown?.seat !== seat) setShown({ seat, index })
 

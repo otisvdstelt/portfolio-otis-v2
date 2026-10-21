@@ -11,9 +11,7 @@ import { paintedToon, setGlow } from './materials'
 
 const c = (hex: string) => new Color(hex)
 
-// Golden hour over the sea: periwinkle overhead, peach at the horizon, and
-// shadows that lean toward lavender instead of going grey. A scene's mood
-// may replace any of the first five; everything else is the hour's.
+// Golden hour over the sea. A scene mood may replace any of the first five
 const DAY = {
   skyTop: c('#6f8ad6'),
   skyHorizon: c('#f6d6c6'),
@@ -46,7 +44,7 @@ const NIGHT: typeof DAY = {
   ink: c('#070914'),
 }
 
-// What a gentle rain does to any hour: the colour drains toward slate.
+// What rain does to any hour, draining the colour toward slate
 const SLATE = { sky: c('#8f9ba6'), horizon: c('#c5cbc9'), light: c('#c3c9cf') }
 const DUST = c('#ffd98a')
 
@@ -57,22 +55,22 @@ const focus = new Vector3()
 
 interface AtmosphereProps {
   phase: Phase
-  /** What the scene being visited does to the hour. */
+  /** What the scene being visited does to the hour */
   mood: Mood
   weather: Weather
   reducedMotion: boolean
-  /** Shadow map edge in texels; smaller on phones. */
+  /** Shadow map edge in texels, smaller on phones */
   shadowSize: number
 }
 
-/** The hour, the weather and the scene's own mood: lights, fog, and the clock every shader in the world reads. */
+/** Lights, fog and the clock every shader reads, from the hour, weather and mood */
 export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: AtmosphereProps) {
   const scene = useThree((s) => s.scene)
   const hemi = useRef<HemisphereLight>(null)
   const sun = useRef<DirectionalLight>(null)
   const fog = useMemo(() => new FogExp2('#f6d6c6', DAY.density), [])
   const night = phase === 'night' || Boolean(mood.night)
-  // The scene's colours as they stand this frame, on their way to wherever the mood wants them.
+  // The colours as they stand this frame, on their way to where the mood wants them
   const now = useRef({ skyTop: c('#6f8ad6'), skyHorizon: c('#f6d6c6'), skyGlow: c('#ffb07e'), water: c('#8fa2d6'), sun: c('#ffd4a2'), dust: c('#ffd98a'), mirror: 0.78, shallow: 0, tint: 0, tintColour: c('#7d6ad6') })
 
   useEffect(() => {
@@ -82,7 +80,7 @@ export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: 
     }
   }, [scene, fog])
 
-  // The world opens already in its hour; after that, night only ever falls or lifts gradually.
+  // The world opens already in its hour, after that night falls gradually
   useState(() => {
     air.night.value = night ? 1 : 0
   })
@@ -93,7 +91,7 @@ export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: 
     air.rain.value = ease(air.rain.value, weather === 'rain' ? 1 : 0, dt, 0.8)
     air.wind.value = (reducedMotion ? 0.15 : 1) * (1 + air.rain.value * 0.9)
 
-    // While the fog has the whole picture, a new scene's mood is put on at once; otherwise it eases in.
+    // Behind full fog a new mood is put on at once, otherwise it eases in
     const hidden = air.reveal.value < 0.06
     const rate = hidden ? 60 : 2.4
     const long = Math.min(delta, 1)
@@ -107,7 +105,7 @@ export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: 
     m.dust.lerp(mood.dust ? wanted.set(mood.dust) : DUST, 1 - Math.exp(-long * rate))
     m.mirror = ease(m.mirror, mood.mirror ?? 0.78, long, rate)
     m.shallow = ease(m.shallow, mood.shallow ?? 0, long, rate)
-    // A request from the scene to lean the whole sky toward another time of day. (Nothing asks at present.)
+    // A scene can ask to lean the whole sky toward another time of day
     m.tint = ease(m.tint, air.tint.amount, long, 2.2)
     if (air.tint.amount > 0) m.tintColour.lerp(wanted.setRGB(air.tint.r, air.tint.g, air.tint.b), 1 - Math.exp(-long * 3))
 
@@ -125,7 +123,7 @@ export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: 
     look.dust.copy(m.dust)
     look.mirror = m.mirror + (0.78 - m.mirror) * dusk * 0.6
     look.shallow = m.shallow * (1 - dusk * 0.6)
-    // Haze is the colour of the sky where it meets the sea; that is why there is no horizon line.
+    // Haze takes the sky colour at the sea, which is why there is no horizon line
     look.fog.copy(look.skyHorizon)
 
     fog.color.copy(look.fog)
@@ -139,7 +137,7 @@ export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: 
     if (sun.current) {
       sun.current.color.copy(m.sun).lerp(NIGHT.sun, dusk).lerp(scratch.copy(SLATE.light).multiplyScalar(dim), rain * 0.7)
       sun.current.intensity = (DAY.sunPower + (NIGHT.sunPower - DAY.sunPower) * dusk) * (1 - rain * 0.55) * (1 - m.tint * 0.25)
-      // The world is far too wide for one shadow map, so the sun's shadow follows whatever is being looked at.
+      // The world is too wide for one shadow map, so the shadow follows the view
       const controls = state.controls as OrbitControlsImpl | null
       focus.copy(controls ? controls.target : state.camera.position)
       sun.current.position.copy(focus).addScaledVector(SUN_DIRECTION, 120)
@@ -151,12 +149,7 @@ export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: 
 
   return (
     <>
-      {/*
-        Cel lighting, in three's physical units (a lit surface shows
-        albedo * light / PI). The sky light sets the shadow tone, the warm
-        sun adds the lit band, and together they land a little over each
-        part's true colour: the glow of the last hour of sun.
-      */}
+      {/* Cel lighting in physical units, sky light for the shadow tone and sun for the lit band */}
       <hemisphereLight ref={hemi} args={['#bcc6f0', '#f3cfa6', DAY.hemi]} />
       <directionalLight ref={sun} color="#ffd4a2" intensity={DAY.sunPower} castShadow shadow-mapSize={[shadowSize, shadowSize]} shadow-bias={-0.0004} shadow-normalBias={0.05} shadow-radius={3}>
         <orthographicCamera attach="shadow-camera" args={[-46, 46, 46, -46, 10, 260]} />
@@ -165,7 +158,7 @@ export function Atmosphere({ phase, mood, weather, reducedMotion, shadowSize }: 
   )
 }
 
-// ------------------------------------------------------------ sky
+// ============================================================ sky
 
 const skyVertex = /* glsl */ `
   varying vec3 vDir;
@@ -210,39 +203,39 @@ const skyFragment = /* glsl */ `
 
   void main() {
     vec3 dir = normalize(vDir);
-    // Below the horizon the dome shows what the sea would mirror, so the two meet in one colour.
+    // Below the horizon the dome shows what the sea would mirror, so both match
     float h = abs(dir.y);
     vec2 compass = normalize(dir.xz + 1e-5);
 
-    // One long wash from peach at the horizon, through lavender, up to periwinkle.
+    // One long wash from peach at the horizon up to periwinkle
     vec3 colour = mix(uHorizon, uTop, pow(smoothstep(0.0, 0.72, h), 0.62));
 
-    // The warmth of the low sun spreads along the horizon on its side of the sky.
+    // The warmth of the low sun spreads along its side of the horizon
     float toward = max(dot(normalize(vec3(dir.x, h * 0.6, dir.z)), uSun), 0.0);
     colour += uGlow * (pow(toward, 5.0) * 0.3 + pow(toward, 40.0) * 0.4);
     float disc = smoothstep(0.9988, 0.9993, dot(dir, uSun)) * (1.0 - uRain);
     colour = mix(colour, mix(vec3(1.0, 0.95, 0.84), vec3(0.93, 0.95, 1.0), uNight), disc);
 
-    // A far bank of cloud lying along the horizon: violet in its body, peach along its top.
+    // A far bank of cloud, violet in the body and peach along the top
     float bank = fbm(vec2(compass.x * 3.1 + uTime * 0.004, compass.y * 3.1 + 2.0));
     float crest = 0.05 + bank * 0.2;
     float body = smoothstep(crest, crest - 0.055, h) * smoothstep(0.012, 0.05, h);
     vec3 cloud = mix(mix(uTop, uHorizon, 0.55) * 0.9, uHorizon + uGlow * 0.3, smoothstep(crest - 0.07, crest, h));
     colour = mix(colour, cloud, body * (0.82 - 0.4 * uNight));
 
-    // High cloud, dragged across with a dry brush.
+    // High cloud, dragged across with a dry brush
     float streak = fbm(vec2(compass.x * 2.4 + uTime * 0.006, h * 12.0 + compass.y * 1.7));
     float cirrus = smoothstep(0.52, 0.76, streak) * smoothstep(0.24, 0.42, h) * (1.0 - smoothstep(0.6, 0.9, h));
     colour = mix(colour, mix(uHorizon, vec3(1.0), 0.4) + uGlow * 0.12, cirrus * (0.42 - 0.3 * uNight));
     colour = mix(colour, uHorizon * 0.92, uRain * 0.45 * smoothstep(0.3, 0.7, streak));
 
-    // Stars, once it is dark and dry.
+    // Stars, once it is dark and dry
     vec2 starCell = dir.xz / (h + 0.4) * 46.0;
     float star = step(0.982, hash(floor(starCell))) * smoothstep(0.17, 0.0, length(fract(starCell) - 0.5));
     float twinkle = 0.6 + 0.4 * sin(uTime * 2.0 + hash(floor(starCell) + 3.0) * 40.0);
     colour += star * twinkle * uNight * (1.0 - uRain) * smoothstep(0.08, 0.3, h) * step(0.0, dir.y);
 
-    // Far islands, each a single flat wash, sitting on the horizon.
+    // Far islands, each a single flat wash on the horizon
     float isle = 0.004 + 0.03 * smoothstep(0.52, 0.8, fbm(compass * 2.6 + 4.0));
     colour = mix(colour, mix(uFar, uHorizon, 0.45), smoothstep(isle + 0.003, isle - 0.002, h) * step(0.0, dir.y) * step(0.0045, isle));
 
@@ -250,7 +243,7 @@ const skyFragment = /* glsl */ `
   }
 `
 
-// The cloud bank: direction round the compass (radians from north), distance, height, size.
+// The cloud bank, as bearing in radians from north, distance, height and size
 const CLOUDS: readonly (readonly [number, number, number, number])[] = [
   [-0.62, 300, 30, 13],
   [-0.3, 350, 46, 17],
@@ -268,7 +261,7 @@ const CLOUDS: readonly (readonly [number, number, number, number])[] = [
   [-0.9, 430, 110, 15],
 ]
 
-/** The painted sky: a dome and a bank of cel-shaded clouds, both of which travel with the camera so they stay at the horizon. */
+/** A dome and a bank of clouds, both travelling with the camera to stay at the horizon */
 export function Sky({ reducedMotion }: { reducedMotion: boolean }) {
   const parts = useParts()
   const dome = useRef<Mesh>(null)
@@ -295,7 +288,7 @@ export function Sky({ reducedMotion }: { reducedMotion: boolean }) {
       }),
     [],
   )
-  // Clouds are lit like everything else but never fade into the haze.
+  // Clouds are lit like everything else but never fade into the haze
   const cloudPaint = useMemo(() => {
     const paint = paintedToon()
     paint.fog = false

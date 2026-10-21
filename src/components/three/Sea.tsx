@@ -54,56 +54,51 @@ const seaShader = {
     ${RAIN_RINGS_GLSL}
 
     void main() {
-      // The sea's own pattern is measured along the journey, not along the map, so a train going round its lap never sees it jump.
+      // The pattern is measured along the journey, not the map, so it never jumps
       vec2 w = vec2(vWorld.x + uShift, vWorld.z);
       float reach = length(cameraPosition - vWorld);
 
-      // A mirror, but a painted one: the picture is dragged sideways in long strokes, more the farther it lies.
+      // A painted mirror, the picture dragged sideways in long strokes
       float stroke = sin(w.y * 0.55 + uTime * 0.4) * 0.5 + sin(w.y * 1.25 - uTime * 0.6 + w.x * 0.11) * 0.3 + sin(w.y * 0.21 + w.x * 0.05) * 0.4;
       float rings = rainRings(w * 0.8, uTime) * uRain;
       vec4 mirror = vMirror;
       mirror.x += (stroke * (0.0016 + min(reach, 120.0) * 0.00002) * (1.0 + uRain * 4.0) + rings * 0.02) * mirror.w;
       vec3 reflection = texture2DProj(tDiffuse, mirror).rgb;
 
-      // Looking straight down you see water; along the surface you see the sky upside down, a shade deeper.
+      // Straight down you see water, along the surface the sky upside down
       vec3 toEye = normalize(cameraPosition - vWorld);
       float glance = pow(1.0 - max(toEye.y, 0.0), 2.4);
-      // Where the sea is shallow and clear it keeps its own colour underfoot, and a net of light moves on the bottom.
+      // Shallow water keeps its own colour, with a net of light on the bottom
       float net = 1.0 - smoothstep(0.0, 0.1, abs(sin(w.x * 0.9 + sin(w.y * 0.7 + uTime * 0.6) * 1.4) * sin(w.y * 0.8 + sin(w.x * 0.6 - uTime * 0.5) * 1.4)));
       vec3 body = uTint * (1.0 + 0.22 * uShallow * (1.0 - glance)) + net * 0.2 * uShallow * (1.0 - glance) * (1.0 - smoothstep(20.0, 70.0, reach));
       vec3 colour = mix(body, reflection * 0.93, clamp(uMirror * 0.78 + (1.0 - uMirror * 0.78) * glance * (0.55 + 0.45 * uMirror), 0.0, 0.98));
 
-      // The sun's road across the water: broken dashes of light toward where it stands.
+      // The road of the sun across the water, broken dashes toward where it stands
       vec3 bounced = reflect(-toEye, vec3(0.0, 1.0, 0.0));
       float road = pow(max(dot(bounced, uSun), 0.0), 60.0);
       float dashes = smoothstep(0.35, 0.8, sin(w.y * 1.6 + stroke * 2.0) * 0.5 + 0.5 + stroke * 0.3);
       colour += (uGlow * 0.9 + 0.25) * road * dashes * (1.0 - uRain * 0.8) * (1.0 - uNight * 0.6);
       colour += smoothstep(0.82, 0.9, stroke) * smoothstep(0.2, 0.7, glance) * 0.045 + rings * 0.22;
 
-      // Far out, the sea is the colour of the sky it meets.
+      // Far out, the sea is the colour of the sky it meets
       float haze = 1.0 - exp(-pow(reach * uDensity, 2.0));
       gl_FragColor = vec4(mix(colour, uFog, haze), 1.0);
     }
   `,
 }
 
-/**
- * The sea: endless, perfectly flat, and a real mirror (how much of one is up to the scene: a scene may stand in shallow water you can see into). The world is drawn a
- * second time from under the surface into a texture, and the water shows that
- * picture with long horizontal strokes dragged through it. The sheet of
- * water follows the camera, so there is always more of it.
- */
+/** An endless flat mirror. The world is drawn again from under it, in long strokes */
 export function Sea({ resolution }: { resolution: number }) {
   const mirror = useMemo(() => {
     const water = new Reflector(new PlaneGeometry(4200, 4200), { textureWidth: resolution, textureHeight: resolution, clipBias: 0.01, multisample: 0, shader: seaShader })
-    // The reflection camera is a copy of the main one; send it back to the default layer so it skips grass and motes.
+    // The reflection camera is a copy, so send it back to layer 0 to skip grass and motes
     const reflectionCamera = water.getReflectionCamera.bind(water)
     water.getReflectionCamera = (camera: Camera) => {
       const copy = reflectionCamera(camera)
       copy.layers.set(0)
       return copy
     }
-    // The mirror clones its uniforms when it is made; tie the clock and the weather back to the shared ones.
+    // The mirror clones its uniforms, so tie the clock and weather back to the shared ones
     const { uniforms } = water.material as ShaderMaterial
     uniforms.uTime = air.time
     uniforms.uRain = air.rain

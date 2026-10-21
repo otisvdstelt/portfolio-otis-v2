@@ -1,6 +1,6 @@
 import type { ThreeEvent } from '@react-three/fiber'
 
-/** Pointer handlers for anything that can be pressed: a hand cursor, and a click that ignores the end of a drag. */
+/** A hand cursor, and a click that ignores the end of a drag */
 export function pressable(onPress: () => void, onHover?: (over: boolean) => void) {
   return {
     onClick: (event: ThreeEvent<MouseEvent>) => {

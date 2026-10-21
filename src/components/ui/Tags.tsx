@@ -1,11 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { tags } from '../../lib/tags'
 
-/**
- * Every paper tag the scene has pinned up, drawn over the picture. The
- * scene decides the words and moves each one to its place every frame (see
- * `Tag` in three/Piece.tsx); nothing here can be pressed.
- */
+/** Every paper tag the scene has pinned up, drawn over the picture */
 export function Tags() {
   const listed = useSyncExternalStore(tags.subscribe, tags.read)
   return (

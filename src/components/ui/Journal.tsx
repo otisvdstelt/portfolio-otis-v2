@@ -1,11 +1,6 @@
 import { ABOUT, OWNER } from '../../content/site'
 
-/**
- * The journal from the compartment's table, as text: who Otis is, where Otis
- * studies, the timeline so far and how Otis works. On a wide screen these
- * words are on the journal itself, in the picture (see three/Cars.tsx);
- * this is the same thing for a phone, and for anyone not looking at it.
- */
+/** The journal from the table as text, for a phone and for anyone not looking */
 export function Journal() {
   return (
     <article className="sketchpad">

@@ -1,7 +1,5 @@
-// The paper tags pinned to things in the world are ordinary page elements,
-// but what they say and where they are is decided inside the 3D scene. This
-// is the hand-over between the two: the scene writes each tag's words here
-// and moves its element every frame; the page draws whatever is listed.
+// The paper tags are page elements, but the scene decides their words and places
+// The scene writes them here and moves them each frame, the page draws what is listed
 import type { ReactNode } from 'react'
 
 export interface TagEntry {
@@ -21,7 +19,7 @@ function publish() {
 }
 
 export const tags = {
-  /** Add a tag, or change what it says. */
+  /** Add a tag, or change what it says */
   write(id: string, shown: boolean, content: ReactNode) {
     entries.set(id, { id, shown, content })
     publish()
@@ -30,7 +28,7 @@ export const tags = {
     entries.delete(id)
     publish()
   },
-  /** The page tells the scene which element is which tag's. */
+  /** The page tells the scene which element belongs to which tag */
   attach(id: string, element: HTMLElement | null) {
     if (element) elements.set(id, element)
     else elements.delete(id)

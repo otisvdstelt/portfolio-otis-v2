@@ -1,6 +1,5 @@
-// Copies the small glTF-only Draco decoder that ships with three.js into
-// public/draco, so the world's model is decoded with files served from this
-// site and not from a third-party CDN.
+// Copies the small Draco decoder that ships with three.js into public/draco, so the
+// model is decoded from files served by this site and not by a third party CDN
 import { cp, mkdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'

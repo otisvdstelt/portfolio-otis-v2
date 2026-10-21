@@ -1,25 +1,19 @@
 import type { ReactNode } from 'react'
 
 interface BookmarkProps {
-  /** Something in the picture is open and being read. */
+  /** Something in the picture is open and being read */
   shown: boolean
-  /** What a screen reader calls these links: "Rotom Dex: links". */
+  /** What a screen reader calls these links */
   label: string
   links?: readonly { label: string; href: string }[]
-  /** The words on the button that puts it away: "close the book". */
+  /** The words on the button that puts it away */
   closeLabel: string
   onClose: () => void
-  /** The same words that are on the pages in the picture, as text. Never shown; read out. */
+  /** The words on the pages in the picture, as text, never shown but read out */
   children?: ReactNode
 }
 
-/**
- * The ribbon of whatever lies open in the picture. There the pages carry
- * their own words and their own links; this slip holds the same links and
- * the way to close it for the keyboard (it comes into view when the keyboard
- * reaches it), and repeats the pages as text for anyone who is not looking
- * at the picture.
- */
+/** The links of whatever lies open in the picture, for the keyboard and for readers */
 export function Bookmark({ shown, label, links = [], closeLabel, onClose, children }: BookmarkProps) {
   return (
     <>

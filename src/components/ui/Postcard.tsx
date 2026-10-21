@@ -5,12 +5,7 @@ type Errors = Partial<Record<'message' | 'name' | 'reply', string>>
 
 const looksLikeEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
-/**
- * The card from the mail car's desk: the message on the left, who it is from
- * and who it is for on the right, as a postcard is. There is no server
- * behind this site, so posting it hands it to the visitor's own mail app,
- * addressed and written; they press send there.
- */
+/** The card from the desk. With no server behind the site, posting it opens a mail app */
 export function Postcard() {
   const id = useId()
   const [message, setMessage] = useState('')
@@ -29,7 +24,7 @@ export function Postcard() {
     setErrors(found)
     if (Object.keys(found).length > 0) {
       setPosted(false)
-      // Send the keyboard to the first line that needs attention.
+      // Send the keyboard to the first line that needs attention
       const first = (['message', 'name', 'reply'] as const).find((field) => found[field])
       document.getElementById(`${id}-${first}`)?.focus()
       return

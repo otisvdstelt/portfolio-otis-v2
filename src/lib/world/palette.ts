@@ -1,15 +1,14 @@
-// The paintbox. The page's five named colours (see src/index.css) are in here
-// too, so that paper, ink, moss, mist and terracotta are the same on the HTML
-// and in the painted world.
+// The paintbox. The five named colours of the page are in here too, see src/index.css
+// so that paper, ink, moss, mist and terracotta match the HTML and the painted world
 export const PAINT = {
-  // The five from the brief.
+  // The five from the brief
   parchment: '#f7f4eb',
   ink: '#2c2823',
   moss: '#3b533e',
   mist: '#a3c1ad',
   terracotta: '#b8623b',
 
-  // Greens.
+  // Greens
   mossLight: '#5f8048',
   clover: '#86ae4a',
   sunlit: '#b9c75c',
@@ -20,7 +19,7 @@ export const PAINT = {
   pine: '#2f5540',
   pineLight: '#4f7f58',
 
-  // Earth, stone and timber.
+  // Earth, stone and timber
   path: '#d8bd8b',
   pathEdge: '#c1a06f',
   sand: '#dbcb9f',
@@ -32,7 +31,7 @@ export const PAINT = {
   woodLight: '#b3855c',
   woodDark: '#5f4231',
   woodPale: '#cba77c',
-  // Sun-bleached planks, and the dark walnut of old shop fittings.
+  // Bleached planks, and the dark walnut of old shop fittings
   bleached: '#d8ccb4',
   bleachedLight: '#e9dfc9',
   bleachedDark: '#b9ab90',
@@ -47,7 +46,7 @@ export const PAINT = {
   leather: '#8f4e31',
   leatherDeep: '#6a3722',
 
-  // Plaster, canvas and paper.
+  // Plaster, canvas and paper
   plaster: '#f1e4c8',
   plasterShade: '#dccaa6',
   cream: '#f2e7ce',
@@ -55,7 +54,7 @@ export const PAINT = {
   canvas: '#f6eedb',
   white: '#fbf8f0',
 
-  // The train and the roofs.
+  // The train and the roofs
   red: '#b5332c',
   redDeep: '#8a2320',
   redLight: '#cf4c3d',
@@ -63,7 +62,7 @@ export const PAINT = {
   terracottaLight: '#d98660',
   roofGrey: '#6f6a64',
 
-  // Metal.
+  // Metal
   copper: '#c9783e',
   copperLight: '#e4a262',
   verdigris: '#7fb8a3',
@@ -73,7 +72,7 @@ export const PAINT = {
   soot: '#2b2521',
   steel: '#8d949a',
 
-  // The bakery.
+  // The bakery
   crust: '#d9a047',
   crustDeep: '#a8672a',
   crustLight: '#f0c878',
@@ -84,7 +83,7 @@ export const PAINT = {
   brick: '#a8553a',
   brickLight: '#c6714f',
 
-  // The attic's glass and paper.
+  // Glass and paper for the attic
   ruby: '#c2465b',
   emerald: '#3f9b6d',
   sapphire: '#4f78c8',
@@ -104,9 +103,8 @@ export const PAINT = {
   wine: '#5c262b',
   wineLight: '#7b3438',
 
-  // Sky and light.
-  // Clouds at the end of the day: violet underneath, peach where the sun still reaches.
-  // Clouds are painted white; the hour's light is what colours them.
+  // Sky and light
+  // Clouds are painted white, and the light of the hour is what colours them
   cloudShade: '#c7cde6',
   cloud: '#ffffff',
   tealTin: '#3f8f95',
@@ -118,8 +116,8 @@ export const PAINT = {
   window: '#f7e6b4',
 } as const
 
-/** The colours potions come in. */
+/** The colours potions come in */
 export const JEWELS = [PAINT.ruby, PAINT.emerald, PAINT.sapphire, PAINT.honey, PAINT.violet, PAINT.teal, PAINT.rose, PAINT.lime] as const
 
-/** The colour of each project's label in the picture car's rack, first to last: the paint on the tin and the cover on the phone's page are the same four. */
+/** The colour of each project label, the same on the tin and on the page */
 export const LEATHERS = ['#93333a', '#2f5d48', '#34578f', '#a06c22'] as const

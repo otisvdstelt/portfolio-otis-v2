@@ -1,35 +1,32 @@
-# Otis van der Stelt: portfolio
+# Otis van der Stelt, portfolio
 
-A portfolio you travel through. One hand-painted (from studio ghibli) train crossing a flat sea: you board it at a floating halt, the passenger car is the main menu, and each section of the site is the same train fitted out for one thing, reached by taking a window seat and letting the fog roll over.
+My portfolio is a train. You board it at a floating halt in the middle of a flat sea, the passenger car is the menu, and every section of the site is the same train fitted out for one thing. Take a window seat, let the fog roll over, and you are somewhere else.
 
-Built with Vite, React 19, TypeScript, Tailwind CSS v4, Three.js, React Three Fiber, drei and TanStack Query.
+## How I made it
+
+- The page is React 19 and TypeScript, built with Vite.
+- The look is Tailwind CSS v4. The torn paper, the wobbly pen lines and the ragged edges are all CSS and SVG filters, no images.
+- The world is Three.js with React Three Fiber and drei. Nothing in it is hand modelled. Every bench, tin and lever is written as code in `src/lib/world`, and `npm run world` bakes it into one Draco compressed `.glb` with glTF Transform.
+- The painting on top is my own postprocessing pass. It inks the edges, gives the picture a paper grain and rolls the fog across between scenes.
+- The project pages read a list from `public/data/projects.json` and fetch the live figures from the GitHub API with TanStack Query.
+- The handwriting is four Google Fonts, loaded through Fontsource.
+- Linting is oxlint, hosting is Vercel.
 
 ## Run it
 
+You need Node 22.18 or newer.
+
 ```bash
 npm install
-npm run dev
-npm run build
-npm run preview
+npm run dev      # start it
+npm run build    # typecheck, then build
+npm run preview  # look at the build
 npm run lint
+npm run world    # bake the world again after changing src/lib/world
 ```
 
-Node 22.18 or newer is needed (Vite 8, and `npm run world` runs a TypeScript file directly).
+## Small print
 
-## How it is put together
+The code is mine and there is no licence on it yet, so please ask me before you reuse a piece of it. The mood of the world owes a lot to Studio Ghibli films, which I love, but nothing in here is theirs. The typefaces come from Google Fonts through Fontsource and keep their own licences.
 
-### The world is generated, then baked
-
-There are no hand-modelled files. Everything that stands in the world is described in TypeScript in `src/lib/world/` as stacked, painted primitives, and `npm run world` bakes it into one Draco-compressed file:
-```
-src/assets/world.glb      34 named meshes, about 23,000 triangles, 1.3 MB -> 118 KB
-```
-- `kit.ts`: the modelling kit (blocks, posts, lumpy balls, extrusions, rings), each piece coloured per vertex.
-- `terrain.ts`: the map (where the line runs, the stretch the train cruises) and the noise the kit roughens things with.
-- `railway.ts`: the halt, the line, the train and its interior.
-- `scenes.ts`: what the train is fitted out with: the picture car's screen, projector and tins, the compartment, the journal, the mail car's sorting frame, the driver's cab.
-- `spec.ts`: measurements the bake and the app share, such as where lettering goes on a sign.
-
-## Credits
-
-The world's mood draws on Studio Ghibli's films
+There is no backend, no analytics and no cookies. The only thing the site stores is whether you chose day or night, and that stays in your own browser. The contact card opens your own mail app, so nothing is sent anywhere until you press send yourself.

@@ -17,19 +17,19 @@ const QUARTER = Math.PI / 2
 const FLOOR = CAR.floor
 const { screen, tins } = CINEMA
 const SCREEN = { width: screen.width, height: screen.top - screen.bottom, middle: (screen.top + screen.bottom) / 2 }
-/** A press that is only a press on the thing itself, and must not count as a press on nothing. */
+/** A press on the thing itself, which must not count as a press on nothing */
 const swallow = { onClick: (event: ThreeEvent<MouseEvent>) => event.stopPropagation() }
 const ramp = (from: number, to: number, x: number) => MathUtils.smoothstep(x, from, to)
 
-/** A project as it stands in the rack: what is written on its tin, and what its tag says. */
+/** A project as it stands in the rack, the words on its tin and on its tag */
 export interface Volume {
   title: string
   kind: string
 }
 
-// ------------------------------------------------------------ what is thrown on the screen
+// ============================================================ what is thrown on the screen
 
-// The screen is laid out from its middle: x to the watcher's right, y up. The picture has the left of it, the words the right.
+// The screen is measured from its middle, picture on the left and words on the right
 const EDGE = SCREEN.width / 2 - 0.07
 const TOP = SCREEN.height / 2 - 0.07
 const PICTURE = { width: 1.16, height: 0.725 }
@@ -39,12 +39,12 @@ const UNDER = TOP - PICTURE.height
 const BLEND = ['#b8623b', '#3b533e', '#e3b659', '#a3c1ad', '#5e554a']
 const { ink: INK, soft: SOFT, rust: RUST, moss: MOSS } = PAGE_INK
 
-/** A web address as it would be written on a luggage label: no scheme, no trailing slash. */
+/** A web address as written on a luggage label, with no scheme and no trailing slash */
 const asPath = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
 type Lettering = Omit<ComponentProps<typeof Text>, 'ref'> & { level: RefObject<number>; face?: keyof typeof FACES }
 
-/** Words thrown on the screen. They are as bright as the part of the programme they belong to. */
+/** Words thrown on the screen, as bright as the part they belong to */
 function Thrown({ level, face = 'body', color = INK, ...text }: Lettering) {
   const words = useRef<{ fillOpacity: number; visible: boolean } | null>(null)
   useFrame(() => {
@@ -55,7 +55,7 @@ function Thrown({ level, face = 'body', color = INK, ...text }: Lettering) {
   return <Text ref={words as never} font={FACES[face]} color={color} anchorX="left" anchorY="top" fillOpacity={0} position-z={0.004} renderOrder={3} {...text} />
 }
 
-/** A patch of flat light on the screen: the lit sheet itself, a length of the language stroke. */
+/** A patch of flat light, the lit sheet or a length of the language stroke */
 function Patch({ level, at, size, colour, lift = 0.003, order = 2 }: { level: RefObject<number>; at: readonly [number, number]; size: readonly [number, number]; colour: string; lift?: number; order?: number }) {
   const paint = useRef<MeshBasicMaterial>(null)
   useFrame(() => {
@@ -69,7 +69,7 @@ function Patch({ level, at, size, colour, lift = 0.003, order = 2 }: { level: Re
   )
 }
 
-/** A still of the project, cropped to fill its frame. Null until it has arrived, and for good if there is none. */
+/** A still cropped to fill its frame, null until it arrives or if there is none */
 function useStill(url: string | null): Texture | null {
   const [still, setStill] = useState<{ url: string; texture: Texture } | null>(null)
   useEffect(() => {
@@ -78,7 +78,7 @@ function useStill(url: string | null): Texture | null {
     new TextureLoader().load(url, (texture) => {
       if (!wanted) return texture.dispose()
       texture.colorSpace = SRGBColorSpace
-      // Cover the frame: keep the middle of whichever way the picture runs over.
+      // Cover the frame, keeping the middle of whichever way the picture runs over
       const image = texture.image as { width: number; height: number }
       const fit = image.width / image.height / (PICTURE.width / PICTURE.height)
       texture.repeat.set(fit > 1 ? 1 / fit : 1, fit > 1 ? 1 : fit)
@@ -93,7 +93,7 @@ function useStill(url: string | null): Texture | null {
 }
 
 interface ProgrammeProps {
-  /** How bright the lantern is, how bright the title card is, and how bright the picture and its words are: each 0..1. */
+  /** How bright the lantern, the title card and the picture are, each 0 to 1 */
   light: RefObject<number>
   card: RefObject<number>
   show: RefObject<number>
@@ -102,7 +102,7 @@ interface ProgrammeProps {
   onAsk: () => void
 }
 
-/** One project, as the lantern shows it: a title card first, then a still of it with what there is to say beside it. */
+/** One project as the lantern shows it, a title card and then the still */
 function Programme({ light, card, show, leaves, onClose, onAsk }: ProgrammeProps) {
   const still = useStill(leaves.image)
   const picture = useRef<MeshBasicMaterial>(null)
@@ -122,7 +122,7 @@ function Programme({ light, card, show, leaves, onClose, onAsk }: ProgrammeProps
     <>
       <Patch level={light} at={[0, 0]} size={[SCREEN.width, SCREEN.height]} colour="#f7efdc" lift={0.002} order={1} />
 
-      {/* The title card. */}
+      {/* The title card */}
       <Thrown level={card} face="hand" color={RUST} fontSize={0.05} anchorX="center" position={[0, 0.27, 0]}>
         {leaves.volume}
       </Thrown>
@@ -133,7 +133,7 @@ function Programme({ light, card, show, leaves, onClose, onAsk }: ProgrammeProps
         {leaves.kind}
       </Thrown>
 
-      {/* The picture. */}
+      {/* The picture */}
       {still ? (
         <mesh position={[FRAME.x, FRAME.y, 0.003]} renderOrder={2}>
           <planeGeometry args={[PICTURE.width, PICTURE.height]} />
@@ -145,7 +145,7 @@ function Programme({ light, card, show, leaves, onClose, onAsk }: ProgrammeProps
         </Thrown>
       )}
 
-      {/* Under it: what the code is made of, when it was last worked on, where to find it. */}
+      {/* Under it, what the code is made of and where to find it */}
       {shares.map(({ name, share }, i) => {
         const length = (share / total) * PICTURE.width
         const middle = stroke + length / 2
@@ -169,7 +169,7 @@ function Programme({ light, card, show, leaves, onClose, onAsk }: ProgrammeProps
         {asPath(leaves.source)}
       </Thrown>
 
-      {/* Beside it: what it is. */}
+      {/* Beside it, what it is */}
       <Thrown level={show} face="hand" color={RUST} fontSize={0.03} position={[WORDS.x, TOP, 0]}>
         {leaves.volume}
       </Thrown>
@@ -195,11 +195,11 @@ function Programme({ light, card, show, leaves, onClose, onAsk }: ProgrammeProps
   )
 }
 
-// ------------------------------------------------------------ the tins
+// ============================================================ the tins
 
 interface TinProps {
   index: number
-  /** The project in this tin, or null for a spare with nothing on its label. */
+  /** The project in this tin, or null for a spare with nothing on its label */
   volume: Volume | null
   chosen: boolean
   isHot: boolean
@@ -208,7 +208,7 @@ interface TinProps {
   onProject: (index: number) => void
 }
 
-/** A film tin in the rack. One with a name on its label is a project; chosen, it is the one in the lantern. */
+/** A film tin in the rack. One with a name on its label is a project */
 function Tin({ index, volume, chosen, isHot, live, onHot, onProject }: TinProps) {
   const tin = useRef<Group>(null)
   const lift = useRef(0)
@@ -247,44 +247,38 @@ function Tin({ index, volume, chosen, isHot, live, onHot, onProject }: TinProps)
 
 export interface CinemaProps {
   volumes: readonly Volume[]
-  /** Which project is in the lantern, or null. */
+  /** Which project is in the lantern, or null */
   chosen: number | null
-  /** What there is to say about it. */
+  /** What there is to say about it */
   leaves: Leaves | null
   hot: Hot | null
-  /** The visitor has arrived in the car. */
+  /** The visitor has arrived in the car */
   here: boolean
   reducedMotion: boolean
   onHot: (hot: Hot | null) => void
   onProject: (index: number) => void
   onClose: () => void
-  /** Ask GitHub for the project's figures again. */
+  /** Ask GitHub for the figures again */
   onAsk: () => void
 }
 
-/**
- * Projects: the picture car. A screen hangs across the far end, a lantern
- * projector stands in the aisle, and each project is a tin of film in the
- * rack. Choose one and the house lights go down, evening falls outside, the
- * reels turn, and the project is thrown on the screen: a title card, then a
- * still of it with what there is to say beside it.
- */
+/** The picture car, a screen, a lantern in the aisle and a tin of film per project */
 export function Cinema({ volumes, chosen, leaves, hot, here, reducedMotion, onHot, onProject, onClose, onAsk }: CinemaProps) {
   const running = chosen !== null && here
   const parts = useParts()
   const reels = useRef<(Group | null)[]>([])
-  // The beam has its own paint, so that it can come up and die down with the lamp.
+  // The beam has its own paint, so it can come up and die down with the lamp
   const beam = useMemo(() => shaft.clone(), [])
   const clock = useRef(0)
   const lamp = useRef(0)
   const light = useRef(0)
   const card = useRef(0)
   const show = useRef(0)
-  // The last programme stays on the screen while the lantern dims (adjusted during render, not in an effect).
+  // The last programme stays on screen while the lantern dims
   const [shown, setShown] = useState(leaves)
   if (leaves && leaves !== shown) setShown(leaves)
 
-  // Whoever leaves the car puts the lights back up behind them.
+  // Whoever leaves the car puts the lights back up behind them
   useEffect(
     () => () => {
       air.house.value = 1
@@ -296,7 +290,7 @@ export function Cinema({ volumes, chosen, leaves, hot, here, reducedMotion, onHo
     const dt = Math.min(delta, 0.1)
     clock.current = running ? clock.current + dt : 0
     const t = clock.current
-    // The lamp is never quite steady.
+    // The lamp is never quite steady
     const flicker = reducedMotion ? 1 : 0.955 + 0.045 * Math.sin(air.time.value * 31) * Math.sin(air.time.value * 7.3)
     lamp.current = MathUtils.damp(lamp.current, running ? 1 : 0, running ? 2.2 : 5, dt)
     light.current = lamp.current * flicker
@@ -333,7 +327,7 @@ export function Cinema({ volumes, chosen, leaves, hot, here, reducedMotion, onHo
         <Tin key={x} index={index} volume={volumes[index] ?? null} chosen={chosen === index} isHot={hot?.kind === 'tome' && hot.index === index} live={here && chosen === null} onHot={onHot} onProject={onProject} />
       ))}
 
-      {/* The screen's own space: its middle, facing back down the car. */}
+      {/* The space of the screen, its middle facing back down the car */}
       <group position={[screen.x - 0.008, FLOOR + SCREEN.middle, screen.z]} rotation-y={-QUARTER}>
         {shown && (
           <Suspense fallback={null}>

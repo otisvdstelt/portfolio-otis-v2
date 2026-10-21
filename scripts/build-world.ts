@@ -1,8 +1,5 @@
-// Bakes the world (src/lib/world) into src/assets/world.glb as named,
-// Draco-compressed meshes with their colours painted into the vertices.
-//
-// Run with `npm run world`. Node runs this TypeScript file directly (type
-// stripping), so the bake and the app share one description of the land.
+// Bakes src/lib/world into src/assets/world.glb, named meshes with painted vertices
+// Run with npm run world. Node runs this file as it is, so the bake and the app agree
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -23,8 +20,7 @@ doc.getRoot().getAsset().generator = 'portfolio-otis build-world.ts'
 const buffer = doc.createBuffer()
 const scene = doc.createScene('World')
 
-// Reference materials so the file reads in any glTF viewer. The app replaces
-// them with its own cel-shaded ones, keyed by these names.
+// Reference materials so the file reads in any viewer. The app swaps in its own by name
 const materials = {
   paint: doc.createMaterial('paint').setRoughnessFactor(1).setMetallicFactor(0),
   glass: doc.createMaterial('glass').setRoughnessFactor(0.2).setMetallicFactor(0).setAlphaMode('BLEND').setBaseColorFactor([1, 1, 1, 0.4]),
@@ -59,7 +55,7 @@ const uncompressed = (await io.writeBinary(doc)).byteLength
 await doc.transform(draco({ method: 'edgebreaker', quantizePosition: 14, quantizeNormal: 9, quantizeColor: 8 }))
 const glb = await io.writeBinary(doc)
 
-// Imported by the app (src/components/three/assets.ts), so every build names it after its contents and no browser can keep an old one.
+// Imported by the app, so every build names it after its contents and no cache sticks
 const out = resolve(root, 'src/assets/world.glb')
 await mkdir(dirname(out), { recursive: true })
 await writeFile(out, glb)

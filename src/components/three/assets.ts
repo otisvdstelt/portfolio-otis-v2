@@ -6,23 +6,23 @@ import worldUrl from '../../assets/world.glb?url'
 
 const base = import.meta.env.BASE_URL
 
-/** The whole world in one Draco-compressed file, baked by `npm run world`. */
-// The build names the file after its contents, so a new model always arrives under a new address and an old one is never served from a cache.
+/** The whole world in one Draco file, baked by npm run world */
+// The name carries a hash of the contents, so a new model is never served from a cache
 export const WORLD_URL = worldUrl
-/** The decoder is served from this site (see scripts/copy-draco.mjs), not from a CDN. */
+/** The decoder is served from this site, not from a CDN */
 const DRACO_PATH = `${base}draco/`
 
-// Start the download the moment this chunk is evaluated, before any component asks for it.
+// Start the download as soon as this chunk runs, before any component asks
 useGLTF.preload(WORLD_URL, DRACO_PATH)
 
-/** The baked world, taken apart into its named meshes. */
+/** The baked world, taken apart into its named meshes */
 export interface Parts {
   geometry: Record<string, BufferGeometry>
-  /** Where each part hangs or turns from, in its own scene's space. */
+  /** Where each part hangs or turns from, in the space of its own scene */
   pivot: Record<string, [number, number, number]>
 }
 
-/** Reads the world's model. Suspends until it is decoded, which is what keeps the loading sprout on screen. */
+/** Suspends until the model is decoded, which keeps the loading sprout on screen */
 export function useWorldModel(): Parts {
   const gltf = useGLTF(WORLD_URL, DRACO_PATH)
   return useMemo(() => {
@@ -37,11 +37,7 @@ export function useWorldModel(): Parts {
   }, [gltf])
 }
 
-/**
- * The page's own lettering, for the name boards and tags inside the world.
- * A promise for `use()`: the scene waits for the faces (briefly, and never
- * for longer than a second and a half) so no sign is first drawn in a fallback.
- */
+/** The faces, awaited for a moment so no sign inside the world is drawn in a fallback */
 export const lettering: Promise<unknown> = Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 1500))])
 
 export const PartsContext = createContext<Parts | null>(null)
